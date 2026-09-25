@@ -52,6 +52,12 @@ As a plugin:
 /plugin install figma-pixel-check@figma-pixel-check
 ```
 
+Or with the [skills](https://skills.sh) CLI (Claude Code, Cursor, Codex and other agents):
+
+```bash
+npx skills add jackkru69/figma-pixel-check
+```
+
 Or copy [`skills/figma-pixel-check`](skills/figma-pixel-check) into your project's `.claude/skills/`.
 
 To fetch frames, connect the [Figma MCP server](https://developers.figma.com/docs/figma-mcp-server/). The
@@ -103,7 +109,7 @@ states. Each of these is spelled out in the method reference.
 Ничего, чего нет в макете, не придумывается.
 
 Установка: `/plugin marketplace add jackkru69/figma-pixel-check`, затем
-`/plugin install figma-pixel-check@figma-pixel-check`. Или скопируйте `skills/figma-pixel-check` в
+`/plugin install figma-pixel-check@figma-pixel-check`. Или `npx skills add jackkru69/figma-pixel-check`. Или скопируйте `skills/figma-pixel-check` в
 `.claude/skills/` проекта.
 
 ## License

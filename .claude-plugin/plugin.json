@@ -1,0 +1,14 @@
+{
+  "name": "figma-pixel-check",
+  "displayName": "Figma Pixel Check",
+  "version": "0.1.0",
+  "description": "Build web screens from Figma frames and prove they match: per-section pixel diff and spacing audit against reference PNGs exported from Figma.",
+  "author": {
+    "name": "jackkru69",
+    "url": "https://github.com/jackkru69"
+  },
+  "homepage": "https://github.com/jackkru69/figma-pixel-check",
+  "repository": "https://github.com/jackkru69/figma-pixel-check",
+  "license": "MIT",
+  "keywords": ["figma", "pixel-perfect", "design-to-code", "visual-regression", "playwright", "pixelmatch"]
+}

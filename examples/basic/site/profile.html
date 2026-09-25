@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'none'"
+    />
+    <title>Profile</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="screen">
+      <header class="nav" data-section="nav">
+        <span class="nav__back" aria-hidden="true"></span>
+        <h1 class="nav__title">Profile</h1>
+      </header>
+      <section class="hero" data-section="hero">
+        <div class="avatar" aria-hidden="true">AK</div>
+        <p class="hero__name">Alex Kim</p>
+        <p class="hero__handle">@alexkim</p>
+      </section>
+      <section class="stats" data-section="stats">
+        <div class="stat"><b>128</b><span>Posts</span></div>
+        <div class="stat"><b>4.2k</b><span>Followers</span></div>
+        <div class="stat"><b>310</b><span>Following</span></div>
+      </section>
+      <ul class="list" data-section="settings">
+        <li>Notifications</li>
+        <li>Privacy</li>
+        <li>Payment methods</li>
+      </ul>
+      <div class="action" data-section="action">
+        <button type="button">Sign out</button>
+      </div>
+    </main>
+  </body>
+</html>

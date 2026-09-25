@@ -1,0 +1,8 @@
+{
+  "// build": "A build that includes the preview routes; null if there is nothing to build",
+  "build": "npm run build -- --mode preview",
+  "dist": "dist",
+  "url": "/preview/{id}",
+  "// captureCss": "The iOS status bar drawn in the frames becomes the app's safe-area inset",
+  "captureCss": ":root { --safe-top: 53px; --safe-bottom: 0px; }"
+}

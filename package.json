@@ -1,0 +1,13 @@
+{
+  "name": "figma-pixel-check",
+  "private": true,
+  "description": "Dev dependencies for running the bundled example; the plugin itself needs none of them.",
+  "scripts": {
+    "example": "cd examples/basic && node ../../skills/figma-pixel-check/scripts/pixel-diff.mjs && node ../../skills/figma-pixel-check/scripts/spacing-audit.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "pixelmatch": "7.2.0",
+    "pngjs": "7.0.0"
+  }
+}

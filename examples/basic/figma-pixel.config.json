@@ -1,0 +1,6 @@
+{
+  "dir": "design",
+  "build": null,
+  "dist": "site",
+  "url": "/{id}.html"
+}

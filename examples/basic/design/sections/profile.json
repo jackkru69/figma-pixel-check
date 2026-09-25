@@ -1,0 +1,33 @@
+{
+  "node": "1:2",
+  "reference": "profile-375.png",
+  "width": 375,
+  "height": 812,
+  "sections": [
+    {
+      "name": "nav",
+      "top": 0,
+      "height": 56
+    },
+    {
+      "name": "hero",
+      "top": 56,
+      "height": 180
+    },
+    {
+      "name": "stats",
+      "top": 236,
+      "height": 88
+    },
+    {
+      "name": "settings",
+      "top": 324,
+      "height": 168
+    },
+    {
+      "name": "action",
+      "top": 492,
+      "height": 96
+    }
+  ]
+}

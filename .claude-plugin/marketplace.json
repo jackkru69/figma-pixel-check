@@ -1,0 +1,15 @@
+{
+  "name": "figma-pixel-check",
+  "description": "Figma → web layout with a per-section pixel check",
+  "owner": {
+    "name": "jackkru69",
+    "url": "https://github.com/jackkru69"
+  },
+  "plugins": [
+    {
+      "name": "figma-pixel-check",
+      "source": ".",
+      "description": "Build web screens from Figma frames and prove they match: per-section pixel diff and spacing audit against reference PNGs exported from Figma."
+    }
+  ]
+}

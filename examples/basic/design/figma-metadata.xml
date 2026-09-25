@@ -1,0 +1,26 @@
+<canvas id="0:1" name="Page 1" x="0" y="0" width="0" height="0">
+  <frame id="1:2" name="Profile" x="0" y="0" width="375" height="812">
+    <frame id="1:3" name="Nav" x="0" y="0" width="375" height="56">
+      <vector id="1:4" name="Back" x="20" y="23" width="10" height="10" />
+      <text id="1:5" name="Profile" x="42" y="18" width="56" height="20" />
+    </frame>
+    <frame id="1:6" name="Hero" x="0" y="56" width="375" height="180">
+      <ellipse id="1:7" name="Avatar" x="151" y="16" width="72" height="72" />
+      <text id="1:8" name="Alex Kim" x="143" y="100" width="89" height="24" />
+      <text id="1:9" name="@alexkim" x="155" y="128" width="65" height="20" />
+    </frame>
+    <frame id="1:10" name="Stats" x="0" y="236" width="375" height="88">
+      <frame id="1:11" name="Stat" x="25" y="0" width="98" height="64" />
+      <frame id="1:12" name="Stat" x="139" y="0" width="98" height="64" />
+      <frame id="1:13" name="Stat" x="253" y="0" width="98" height="64" />
+    </frame>
+    <frame id="1:14" name="Settings" x="0" y="324" width="375" height="168">
+      <frame id="1:15" name="Row" x="20" y="0" width="335" height="56" />
+      <frame id="1:16" name="Row" x="20" y="56" width="335" height="56" />
+      <frame id="1:17" name="Row" x="20" y="112" width="335" height="56" />
+    </frame>
+    <frame id="1:18" name="Action" x="0" y="492" width="375" height="96">
+      <frame id="1:19" name="Button" x="20" y="24" width="335" height="48" />
+    </frame>
+  </frame>
+</canvas>

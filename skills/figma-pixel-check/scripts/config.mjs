@@ -1,0 +1,35 @@
+// Settings shared by pixel-diff.mjs and spacing-audit.mjs: figma-pixel.config.json in the working directory
+// (or --config=<file>). Every key is optional; DEFAULTS documents them.
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+export const DEFAULTS = {
+  // Holds sections/<id>.json and reference/*.png; diff/ and SPACING-AUDIT.md are written here.
+  dir: 'design/figma',
+  // Command that builds the app with the preview routes; null means there is nothing to build.
+  build: 'npm run build',
+  // Static build output, served with an SPA fallback. Ignored when baseUrl is set.
+  dist: 'dist',
+  // An already running server (e.g. "http://127.0.0.1:4173") to capture instead of serving dist.
+  baseUrl: null,
+  // Route of one screen; {id} is the name of sections/<id>.json. A screen can override it with "url".
+  url: '/preview/{id}',
+  // pixelmatch threshold: Figma and Chromium antialias text differently, 0.1 lights up every glyph.
+  threshold: 0.25,
+  // Extra CSS applied during capture, e.g. the iOS status bar drawn in the frames: ":root { --safe-top: 53px; }".
+  captureCss: '',
+  // The spacing audit flags differences of at least this many pixels.
+  spacingFlag: 4,
+};
+
+export function loadConfig(args = process.argv.slice(2)) {
+  const option = args.find((arg) => arg.startsWith('--config='));
+  const file = resolve(option ? option.slice('--config='.length) : 'figma-pixel.config.json');
+  if (option && !existsSync(file)) throw new Error(`Config not found: ${file}`);
+  const user = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+  const unknown = Object.keys(user).filter((key) => !(key in DEFAULTS) && !key.startsWith('//'));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown keys in ${file}: ${unknown.join(', ')}. Known: ${Object.keys(DEFAULTS).join(', ')}`);
+  }
+  return { ...DEFAULTS, ...user };
+}

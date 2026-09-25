@@ -1,6 +1,6 @@
 ---
 name: figma-pixel-check
-description: Build a web screen from a Figma frame and prove it matches, section by section, with a pixel diff and a spacing audit against reference PNGs exported from Figma. Use when implementing or fixing a screen or state from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or to check that a page "matches the design", to compare a built page with Figma, to add a screen to the pixel check, or to set the check up in a web project (React, Vue, Svelte, plain HTML; mobile web, Capacitor, PWA).
+description: Build a web screen from a Figma frame and prove it matches, section by section, with a pixel diff and a spacing audit against reference PNGs exported from Figma, then check it at other phone sizes. Use when implementing or fixing a screen or state from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or to check that a page "matches the design", to compare a built page with Figma, to add a screen to the pixel check, to check that screens hold on narrow and wide phones, or to set the check up in a web project (React, Vue, Svelte, plain HTML; mobile web, Capacitor, PWA).
 ---
 
 # Figma frame → layout → per-section pixel check
@@ -8,7 +8,8 @@ description: Build a web screen from a Figma frame and prove it matches, section
 The layout is never judged by eye. Each screen has a reference PNG exported from Figma at 1x and a list of
 its horizontal sections. The built page is captured in Chromium at the frame size, and **each section is
 compared from its own top**, so one section that is 8 px too tall does not turn everything below it red.
-A spacing audit then measures margins, paddings and gaps of every section in both images.
+A spacing audit then measures margins, paddings and gaps of every section in both images, and a responsive
+audit opens every screen at other phone sizes, where the design has no reference, to catch what breaks there.
 
 Rules that hold throughout:
 
@@ -31,7 +32,8 @@ Skip this if the project already has `figma-pixel.config.json`.
 2. Install the dev dependencies with the project's package manager: `pixelmatch`, `pngjs`, `@playwright/test`,
    then `npx playwright install chromium` (skip when a Chromium for that Playwright version is present).
 3. Add scripts to `package.json`: `"pixel:diff": "node scripts/figma-pixel/pixel-diff.mjs"` and
-   `"spacing": "node scripts/figma-pixel/spacing-audit.mjs"`.
+   `"spacing": "node scripts/figma-pixel/spacing-audit.mjs"`,
+   `"responsive": "node scripts/figma-pixel/responsive-audit.mjs"`.
 4. Create `figma-pixel.config.json` from [assets/figma-pixel.config.example.json](assets/figma-pixel.config.example.json):
    the build command, the build output dir and the preview route (or `baseUrl` of a running server).
 5. **Preview routes.** The app must render any single screen at the configured `url` (default
@@ -72,9 +74,15 @@ Skip this if the project already has `figma-pixel.config.json`.
    Repeat until tops and heights match and the numbers stop falling. After a correct layout a screen
    usually lands at 1–4 %, and text-heavy sections at up to ~7 %, from font rasterisation (see
    [references/method.md](references/method.md#reading-the-numbers)). Do not distort the layout to chase that last part.
-7. **Record.** Update `PIXEL-SPEC.md`: the summary row with both numbers, then **Fixed**, **Kept on purpose**
+7. **Other sizes.** `npm run responsive -- <id> --skip-build` opens the screen at every size in `devices`
+   (360 to 440 px wide by default). Look at the strip `design/figma/diff/responsive/<id>.png` and fix each
+   finding in `report.md`: an element cut by the screen edge, wider than its box, text that does not fit,
+   or content covered by a bottom-pinned bar at the end of scrolling. What the design itself draws that way
+   and cannot be seen goes into `design/figma/responsive-known.json` via `--update-known`, with the reason
+   in `PIXEL-SPEC.md`. Keep 375 px (the design width) unchanged: re-run pixel-diff after these fixes.
+8. **Record.** Update `PIXEL-SPEC.md`: the summary row with both numbers, then **Fixed**, **Kept on purpose**
    (with the reason) and **Open** (with what is needed and from whom). Mark the screen as done in the
    project's screen index if it has one.
-8. **Done** when the project's own checks and build pass, pixel-diff reports no console errors or CSP
-   violations, and every remaining mismatch is explained in `PIXEL-SPEC.md`. In CI,
-   `pixel-diff.mjs --max-section=<percent>` fails the job when a section regresses past the limit.
+9. **Done** when the project's own checks and build pass, pixel-diff and the responsive audit report no console
+   errors, CSP violations or new findings, and every remaining mismatch is explained in `PIXEL-SPEC.md`. In
+   CI, `pixel-diff.mjs --max-section=<percent>` and `responsive-audit.mjs --fail` fail the job on a regression.

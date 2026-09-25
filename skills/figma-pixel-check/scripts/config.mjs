@@ -1,4 +1,4 @@
-// Settings shared by pixel-diff.mjs and spacing-audit.mjs: figma-pixel.config.json in the working directory
+// Settings shared by pixel-diff.mjs, spacing-audit.mjs and responsive-audit.mjs: figma-pixel.config.json in the working directory
 // (or --config=<file>). Every key is optional; DEFAULTS documents them.
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -20,6 +20,17 @@ export const DEFAULTS = {
   captureCss: '',
   // The spacing audit flags differences of at least this many pixels.
   spacingFlag: 4,
+  // Viewports of the responsive audit (CSS pixels). Each may add its own captureCss, e.g. its safe areas.
+  devices: [
+    { name: 'Small Android', width: 360, height: 640 },
+    { name: 'Android', width: 360, height: 780 },
+    { name: 'iPhone 13 mini', width: 375, height: 812 },
+    { name: 'iPhone 16', width: 393, height: 852 },
+    { name: 'Large Android', width: 412, height: 915 },
+    { name: 'iPhone 16 Pro Max', width: 440, height: 956 },
+  ],
+  // The element whose edges are the screen's edges for the responsive audit: clipping inside it is intended.
+  screenRoot: 'body',
 };
 
 export function loadConfig(args = process.argv.slice(2)) {

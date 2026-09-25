@@ -4,5 +4,11 @@
   "dist": "dist",
   "url": "/preview/{id}",
   "// captureCss": "The iOS status bar drawn in the frames becomes the app's safe-area inset",
-  "captureCss": ":root { --safe-top: 53px; --safe-bottom: 0px; }"
+  "captureCss": ":root { --safe-top: 53px; --safe-bottom: 0px; }",
+  "// devices": "Responsive audit sizes; each can emulate its own safe areas. Omit to use the six defaults",
+  "devices": [
+    { "name": "Small Android", "width": 360, "height": 640, "captureCss": ":root { --safe-top: 24px; --safe-bottom: 24px; }" },
+    { "name": "iPhone 16", "width": 393, "height": 852, "captureCss": ":root { --safe-top: 59px; --safe-bottom: 34px; }" },
+    { "name": "iPhone 16 Pro Max", "width": 440, "height": 956, "captureCss": ":root { --safe-top: 62px; --safe-bottom: 34px; }" }
+  ]
 }

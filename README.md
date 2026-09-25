@@ -27,6 +27,10 @@ The spacing audit then measures every section in both images:
 | stats   | 25 / 24 (-1)  | 24 / 23 (-1)  | 0 / 0 (0)   | 24 / 24 (0)     | 88 / 88 (0)      | 16, 16 → 8, 8 |
 ```
 
+And because the design is drawn at one width, a responsive audit opens every screen at six phone sizes
+(360 to 440 px). It puts the screenshots side by side and reports elements cut by the screen edge,
+elements wider than their box, text that does not fit, and content hidden under a bottom-pinned bar.
+
 It was extracted from a production mobile web app (React + Capacitor). There, every section of every
 checked screen ended up matching Figma to the pixel in position and height, and the remaining differences
 were explained one by one.
@@ -38,7 +42,8 @@ were explained one by one.
 3. Writes the sections file from the frame's boxes (`figma-boxes.py --sections` gives a skeleton).
 4. Lays out the screen with the project's own components and tokens, and marks the sections with `data-section`.
 5. Runs `pixel-diff` and `spacing-audit`, then fixes geometry first, spacing second, pixels last.
-6. Records the result in `PIXEL-SPEC.md` under **Fixed**, **Kept on purpose** and **Open**, without
+6. Runs `responsive-audit` to check the other phone sizes without breaking the design width.
+7. Records the result in `PIXEL-SPEC.md` under **Fixed**, **Kept on purpose** and **Open**, without
    inventing anything that is not in the design.
 
 The scripts are plain Node and Playwright, and they also run without Claude, for example in CI.
@@ -86,6 +91,7 @@ real pixel difference.
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `pixel-diff.mjs [ids] [--skip-build] [--max-section=N]` | builds, serves, captures and compares; writes `diff/report.md`, `results.json` and crops |
 | `spacing-audit.mjs`              | margins, paddings, heights and gaps of every section, reference versus build                     |
+| `responsive-audit.mjs [ids] [--fail] [--update-known]` | every screen at six phone sizes: a screenshot strip, and elements off-screen, wider than their box, overflowing text, content under pinned bars |
 | `figma-boxes.py <node> [--sections]` | boxes of a frame's nodes from saved `get_metadata` XML, or a sections-file skeleton           |
 | `serve-dist.mjs`                 | static server with an SPA fallback, used by `pixel-diff`                                         |
 
@@ -94,8 +100,8 @@ of typical mismatch causes: [`references/method.md`](skills/figma-pixel-check/re
 
 ## Limits
 
-Web only (Chromium through Playwright), device scale factor 1, one viewport per sections file, static
-states. Each of these is spelled out in the method reference.
+Web only (Chromium through Playwright), device scale factor 1, one reference viewport per sections file,
+static states. Each of these is spelled out in the method reference.
 
 ---
 
@@ -104,7 +110,9 @@ states. Each of these is spelled out in the method reference.
 Скилл для Claude Code: вёрстка экрана по фрейму Figma и доказательство совпадения. Страница сравнивается
 с эталонным PNG из Figma **по секциям**, каждая от собственного top. Поэтому сдвиг одного блока не
 окрашивает всё, что ниже, а отчёт показывает, какая именно секция отличается: положением, высотой или
-пикселями. Аудит отступов меряет поля, отступы и зазоры каждой секции в эталоне и в сборке. Итог
+пикселями. Аудит отступов меряет поля, отступы и зазоры каждой секции в эталоне и в сборке. Проверка размеров
+открывает каждый экран на шести телефонах от 360 до 440 px и ищет то, что вылезает за экран или за свой
+блок, текст, который не помещается, и контент под закреплённой панелью. Итог
 записывается в `PIXEL-SPEC.md` тремя разделами: «Исправлено», «Оставлено осознанно», «Не закрыто».
 Ничего, чего нет в макете, не придумывается.
 

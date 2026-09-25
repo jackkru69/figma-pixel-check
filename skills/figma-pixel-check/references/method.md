@@ -66,6 +66,8 @@ design/figma/
 | `threshold`   | `0.25`            | pixelmatch colour threshold                                                              |
 | `captureCss`  | `""`              | CSS added during capture, e.g. `":root { --safe-top: 53px; }"`                          |
 | `spacingFlag` | `4`               | the spacing audit flags differences of at least this many px                             |
+| `devices`     | six phones, 360–440 px | responsive audit viewports: `{name, width, height, captureCss?}`                     |
+| `screenRoot`  | `"body"`          | responsive audit: the element whose box is the screen edge; clipping inside it is intended |
 
 Keys starting with `//` are ignored and can hold comments. Unknown keys are an error, so typos do not pass silently.
 
@@ -108,6 +110,32 @@ works too: `"build": "npm run build-storybook"`, `"dist": "storybook-static"`, a
 - `SPACING-AUDIT.md` (from `spacing-audit.mjs`): per section, the left and right margins, top and bottom
   padding, height and the gaps between items in a row, reference versus build.
 
+## Other phone sizes
+
+A design is usually drawn at one width, so the pixel check covers that width only. `responsive-audit.mjs`
+opens every screen from `sections/` at each of `devices` (default: 360×640, 360×780, 375×812, 393×852,
+412×915, 440×956) and writes `diff/responsive/<id>.png`, a strip of all sizes at half scale, plus
+`report.md` and `results.json`. The checks, per screen and size:
+
+| Finding                 | Meaning                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `off-screen`            | cut by the edge of `screenRoot` (clipping by the element's own ancestors inside it is intended) |
+| `wider than its box`    | sticks out of its parent: flow content against the content box, absolute against the border box |
+| `text overflow`         | text wider than its own box (`text cut by an ellipsis` when it ends in `…`)                    |
+| `covered`               | at the end of scrolling, content under an element pinned to the bottom (fixed or sticky)        |
+
+Only the outermost offender is reported, decoration under `aria-hidden="true"` is skipped, and with a
+dialog open (`aria-modal`, `role="dialog"`, `<dialog open>`) only the dialog's content is checked for being
+covered. Screenshots are of the viewport, as on a phone; `--full-page` captures the whole page instead
+(pinned bars then appear where the viewport ended).
+
+Per-device safe areas go into `captureCss` of the device, e.g.
+`{ "name": "iPhone 16", "width": 393, "height": 852, "captureCss": ":root { --safe-top: 59px; --safe-bottom: 34px; }" }`.
+
+Findings that the design itself draws and that cannot be seen (a masked number 2 px wider than its row)
+are accepted with `--update-known`, which writes `responsive-known.json` (`{screen: [finding]}`, without
+the pixel amounts). Record why in `PIXEL-SPEC.md`. `--fail` then fails only on new findings.
+
 ## Reading the numbers
 
 - **Sections (mean)** is the metric. A section missing from the DOM counts as 100 %, never as 0 %.
@@ -140,6 +168,7 @@ Commit the reference PNGs and the sections files, install Chromium in the job, a
 ```bash
 npx playwright install --with-deps chromium
 node scripts/figma-pixel/pixel-diff.mjs --max-section=10
+node scripts/figma-pixel/responsive-audit.mjs --skip-build --fail
 ```
 
 Choose the limit from the current `PIXEL-SPEC.md` numbers plus a margin: the goal is catching regressions,
@@ -147,7 +176,8 @@ not re-litigating the accepted differences. Upload `design/figma/diff/` as an ar
 
 ## Limits
 
-- Web only (Chromium through Playwright), device scale factor 1, one viewport per sections file (add
-  another file with its own reference for another width).
+- Web only (Chromium through Playwright), device scale factor 1. The pixel check compares one viewport
+  per sections file (add another file with its own reference for another width); other sizes get the
+  responsive audit, which finds breakage but has no reference to compare against.
 - A frame is compared in its static state; hover, focus and open menus need their own preview route.
 - Fonts must match: install the design's font files in the app, or the text sections will stay high.

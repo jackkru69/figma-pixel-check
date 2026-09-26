@@ -3,9 +3,9 @@
 //
 //   node test/corpus.mjs --update [dirs...]   run the tool on each screen and rewrite its expected.json
 //
-// expected.json: {sections: {name: {dTop, dHeight, mismatch, color}}, spacingFlags: {section: [property]}}.
+// expected.json: {sections: {name: {dTop, dHeight, mismatch, color, styles?, missingText?}}, spacingFlags: {section: [property]}}.
 // The test wants the geometry exactly, the mismatch no more than MISMATCH_SLACK and the colour share no more
-// than COLOR_SLACK percentage points higher, the same spacing flags, pixel-diff without console errors, and
+// than COLOR_SLACK percentage points higher, the same style differences (screens with styles/<id>.json), the same spacing flags, pixel-diff without console errors, and
 // responsive-audit --fail passing.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -52,6 +52,7 @@ export function measure(dir) {
               dHeight: s.dHeight,
               mismatch: Number((s.mismatch * 100).toFixed(2)),
               color: Number((s.color * 100).toFixed(2)),
+              ...(s.styles && { styles: s.styles.off.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`), missingText: s.styles.missingText }),
             },
       ]),
     ),

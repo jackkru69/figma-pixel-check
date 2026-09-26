@@ -25,6 +25,7 @@ describe('corpus', () => {
           `section ${name}: mismatch ${got.mismatch}% > ${want.mismatch}% + ${MISMATCH_SLACK}`,
         );
         assert.ok(got.color <= want.color + COLOR_SLACK, `section ${name}: colour ${got.color}% > ${want.color}% + ${COLOR_SLACK}`);
+        assert.deepEqual([got.styles, got.missingText], [want.styles, want.missingText], `section ${name}: values that differ from Figma`);
       }
       assert.deepEqual(now.spacingFlags, expected.spacingFlags, 'spacing flags');
     });

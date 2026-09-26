@@ -4,19 +4,25 @@
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.56,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "opacity": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.45,
-      "color": 0.16
+      "color": 0.16,
+      "styles": [],
+      "missingText": 0
     },
     "text-alpha": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 1.28,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     }
   },
   "spacingFlags": {

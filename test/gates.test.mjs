@@ -1,7 +1,7 @@
 // End-to-end checks of the CI gates on a copy of examples/basic: node --test (needs Playwright's Chromium).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { after, before, describe, test } from 'node:test';
@@ -252,6 +252,70 @@ describe('pixel-diff --max-geometry', () => {
       assert.ok(settings.mismatch >= 48 / 168, `settings ${settings.mismatch}`);
       assert.equal(action.color, 0);
     });
+  });
+
+  test("the style check compares Figma's values with the computed styles", () => {
+    const text = (id, characters, y, extra) => ({
+      id, name: characters, type: 'TEXT', x: 20, y, width: 120, height: 20, characters,
+      fills: [{ type: 'SOLID', color: '#16181D', opacity: 1 }], fontSize: 15, fontWeight: 400,
+      lineHeight: { unit: 'PIXELS', value: 20 }, letterSpacing: { unit: 'PIXELS', value: 0 }, textCase: 'ORIGINAL', ...extra,
+    });
+    mkdirSync(join(dir, 'design/styles'), { recursive: true });
+    writeJson('design/styles/profile.json', {
+      frame: '1:2',
+      nodes: [
+        { id: '9:1', name: 'nav', type: 'FRAME', x: 0, y: 0, width: 375, height: 56, layoutMode: 'HORIZONTAL', layoutWrap: 'NO_WRAP', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'CENTER', itemSpacing: 12, padding: [0, 20, 0, 20] },
+        text('9:2', 'Profile', 18, { fontSize: 17, fontWeight: 600 }),
+        text('9:3', 'Alex Kim', 150, { fontSize: 20, fontWeight: 600, lineHeight: { unit: 'PIXELS', value: 24 } }),
+        text('9:4', '@alexkim', 178, { fills: [{ type: 'SOLID', color: '#6B7080', opacity: 1 }] }),
+        { id: '9:5', name: 'button', type: 'FRAME', x: 20, y: 516, width: 335, height: 48, radius: 14, fills: [{ type: 'SOLID', color: '#FDE8E8', opacity: 1 }] },
+        text('9:6', 'Sign out', 530, { fontWeight: 600, fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] }),
+      ],
+    });
+    const ids = (html) => html.replace('<header class="nav"', '<header data-node-id="9:1" class="nav"').replace('<button type="button">', '<button data-node-id="9:5" type="button">');
+    const report = () => readFileSync(join(dir, 'design/diff/report.md'), 'utf8');
+    try {
+      withSite(ids, '', () => {
+        assert.equal(run('pixel-diff.mjs', '--max-style=0').code, 0, report());
+        assert.match(report(), /\| Styles \|/);
+        assert.doesNotMatch(report(), /Values that differ from Figma/);
+      });
+      const mistakes = '.hero__name { font-weight: 500; } .hero__handle { color: #475467; } .action button { border-radius: 8px; } .nav { gap: 16px; }';
+      withSite(ids, mistakes, () => {
+        const { code, out } = run('pixel-diff.mjs', '--max-style=0');
+        assert.equal(code, 1, out);
+        const details = report();
+        assert.match(details, /- hero: «Alex Kim» font-weight 600 → 500/);
+        assert.match(details, /- hero: «@alexkim» color #6B7080 → #475467/);
+        assert.match(details, /- action: button 9:5 radius 14 → 8/);
+        assert.match(details, /- nav: nav 9:1 gap 12 → 16/);
+      });
+      withSite((html) => ids(html).replace('Alex Kim', 'Alex K.'), '', () => {
+        run('pixel-diff.mjs');
+        assert.match(report(), /Figma text not found in its section[^\n]*\n- hero: «Alex Kim»/);
+      });
+    } finally {
+      rmSync(join(dir, 'design/styles'), { recursive: true, force: true });
+    }
+  });
+
+  test('a region is compared in its own columns and placed across too', () => {
+    const sections = structuredClone(original);
+    sections.sections.splice(2, 0, { name: 'left-col', top: 56, height: 180, left: 0, width: 187 }, { name: 'right-col', top: 56, height: 180, left: 187, width: 188 });
+    writeJson(sectionsFile, sections);
+    const markup = (html) => html.replace('</main>', '</main>\n    <div class="col a" data-section="left-col"></div><div class="col b" data-section="right-col"></div>');
+    try {
+      withSite(markup, '.col { position: absolute; top: 56px; height: 180px; } .a { left: 10px; width: 177px; } .b { left: 187px; width: 188px; }', () => {
+        const { code, out } = run('pixel-diff.mjs', '--max-geometry=0');
+        assert.equal(code, 1, out);
+        assert.match(out, /profile\/left-col: top 0, height 0, left \+10, width -10 px/);
+        assert.doesNotMatch(out, /profile\/right-col:/);
+        const report = readFileSync(join(dir, 'design/diff/report.md'), 'utf8');
+        assert.match(report, /\| left-col \| 56\/180 @ 0\/187 \| 56\/180 @ 10\/177 \| 0 · left \+10 ← \| 0 · width -10 ← \|/);
+      });
+    } finally {
+      writeJson(sectionsFile, original);
+    }
   });
 
   test('a malformed limit or a mistyped flag is an error, not a disabled gate', () => {

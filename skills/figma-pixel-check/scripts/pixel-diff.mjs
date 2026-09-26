@@ -7,6 +7,7 @@
 //   node scripts/figma-pixel/pixel-diff.mjs --max-section=15  exit 1 when a section differs by more than 15 %
 //   node scripts/figma-pixel/pixel-diff.mjs --max-geometry=1  exit 1 when a section's top or height is off by more than 1 px
 //   node scripts/figma-pixel/pixel-diff.mjs --max-color=0.5   exit 1 when more than 0.5 % of a section has another colour
+//   node scripts/figma-pixel/pixel-diff.mjs --max-style=0     exit 1 when a section's values differ from Figma's (styles/<id>.json)
 //   node scripts/figma-pixel/pixel-diff.mjs --config=<file>   settings file other than figma-pixel.config.json
 //
 // Every section is cropped from its OWN top in both images and only the overlap is compared, so a height
@@ -24,6 +25,10 @@
 // it compares only pixels that are flat in both images (no edge next to them, so no glyph edges and no
 // anti-aliasing), in CIELAB, and reports the share of the section whose colour differs by more than
 // ΔE 3 and the most common reference → build colour pair (magenta in the section's -diff.png).
+//
+// With <dir>/styles/<id>.json (Figma's values, exported with figma-styles.js through use_figma), the style
+// check compares font, colour, radius, background, opacity, gap and padding with the computed styles: what
+// pixels cannot see, such as a font weight or a neighbouring text colour (style-check.mjs).
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,6 +38,7 @@ import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { loadConfig } from './config.mjs';
 import { serveDist } from './serve-dist.mjs';
+import { compareStyles, readDom, readFigmaStyles, requestsFor } from './style-check.mjs';
 
 const config = loadConfig();
 const REF_DIR = join(config.dir, 'reference');
@@ -52,6 +58,7 @@ const { values: flags, positionals: only } = parseArgs({
     'max-section': { type: 'string' },
     'max-geometry': { type: 'string' },
     'max-color': { type: 'string' },
+    'max-style': { type: 'string' },
     config: { type: 'string' },
   },
 });
@@ -67,6 +74,7 @@ const limitFlag = (name) => {
 const maxSection = limitFlag('max-section');
 const maxGeometry = limitFlag('max-geometry');
 const maxColor = limitFlag('max-color');
+const maxStyle = limitFlag('max-style');
 
 if (!existsSync(SECTIONS_DIR)) {
   throw new Error(`No ${SECTIONS_DIR}: add one sections/<id>.json per screen (see references/method.md).`);
@@ -94,14 +102,22 @@ function readScreen(file) {
     );
   }
   for (const section of screen.sections) {
-    for (const key of ['maxGeometry', 'maxMismatch', 'maxColor']) {
+    // A region: left and width (both or neither) cut a column out of the band, e.g. a sidebar.
+    if (('left' in section || 'width' in section) && !(Number.isFinite(section.left) && Number.isFinite(section.width) && section.width > 0)) {
+      throw new Error(`${file}: section "${section.name}": a region needs a left and a width > 0`);
+    }
+    for (const key of ['maxGeometry', 'maxMismatch', 'maxColor', 'maxStyle']) {
       if (key in section && !(Number.isFinite(section[key]) && section[key] >= 0)) {
         throw new Error(`${file}: section "${section.name}": ${key} must be a number ≥ 0`);
       }
     }
   }
   // Fractional boxes (hand-copied from figma-boxes.py) are snapped by their edges, as Chromium paints them.
-  const sectionsSnapped = screen.sections.map((section) => ({ ...section, ...snap(section.top, section.height) }));
+  const sectionsSnapped = screen.sections.map((section) => {
+    const snapped = { ...section, ...snap(section.top, section.height) };
+    if ('left' in section) Object.assign(snapped, toX(snap(section.left, section.width)));
+    return snapped;
+  });
   const empty = sectionsSnapped.find((section) => section.height <= 0);
   if (empty) throw new Error(`${file}: section "${empty.name}" has no height`);
   const outside = sectionsSnapped.find((section) => section.top >= screen.height);
@@ -115,12 +131,21 @@ function snap(top, height) {
   return { top: snappedTop, height: Math.round(top + height) - snappedTop };
 }
 
-function crop(png, top, height) {
-  const out = new PNG({ width: png.width, height });
+/** snap() of a horizontal extent, as {left, width}. */
+function toX({ top, height }) {
+  return { left: top, width: height };
+}
+
+/** Rows top..top+height (and columns left..left+width) of a PNG; what lies outside it stays transparent. */
+function crop(png, top, height, left = 0, width = png.width) {
+  const out = new PNG({ width, height });
+  const from = Math.max(0, left);
+  const to = Math.min(png.width, left + width);
+  if (to <= from) return out;
   for (let y = 0; y < height; y++) {
     const srcY = top + y;
     if (srcY < 0 || srcY >= png.height) continue;
-    png.data.copy(out.data, y * png.width * 4, srcY * png.width * 4, (srcY + 1) * png.width * 4);
+    png.data.copy(out.data, (y * width + (from - left)) * 4, (srcY * png.width + from) * 4, (srcY * png.width + to) * 4);
   }
   return out;
 }
@@ -128,8 +153,8 @@ function crop(png, top, height) {
 function compare(expected, actual, withColor = false, media = []) {
   const width = Math.min(expected.width, actual.width);
   const height = Math.min(expected.height, actual.height);
-  const a = crop(expected, 0, height);
-  const b = crop(actual, 0, height);
+  const a = crop(expected, 0, height, 0, width);
+  const b = crop(actual, 0, height, 0, width);
   const diff = new PNG({ width, height });
   const mismatched = pixelmatch(a.data, b.data, diff.data, width, height, {
     threshold: config.threshold,
@@ -241,8 +266,14 @@ function matchSections(figmaSections, domSections) {
 /** The section in the DOM whose Figma bottom is the closest one above this top: nested sections are skipped. */
 function closestAbove(figma, boxes) {
   const bottom = (box) => box.figma.top + box.figma.height;
+  const columns = (f) => ('left' in f ? [f.left, f.left + f.width] : [-Infinity, Infinity]);
+  const [left, right] = columns(figma);
+  const shares = (box) => {
+    const [l, r] = columns(box.figma);
+    return Math.min(r, right) > Math.max(l, left);
+  };
   return boxes
-    .filter((box) => box.dom && box.figma !== figma && bottom(box) <= figma.top)
+    .filter((box) => box.dom && box.figma !== figma && bottom(box) <= figma.top && shares(box))
     .reduce((best, box) => (best && bottom(best) >= bottom(box) ? best : box), null);
 }
 
@@ -254,10 +285,13 @@ function geometry(figma, dom, above) {
   const flow = above
     ? dom.top - (above.dom.top + above.dom.height) - (figma.top - (above.figma.top + above.figma.height))
     : shift;
-  return {
+  const result = {
     dTop: (Math.abs(flow) < Math.abs(shift) ? flow : shift) || 0, // no -0 in the report
     dHeight: dom.height - figma.height || 0,
   };
+  // A region is also placed across: its left edge and width against Figma's.
+  if ('left' in figma) Object.assign(result, { dLeft: dom.left - figma.left || 0, dWidth: dom.width - figma.width || 0 });
+  return result;
 }
 
 // Per-section overrides from the sections file win over the command-line limits.
@@ -268,12 +302,20 @@ const overGeometry = (section, value) => {
   const limit = geometryLimit(section);
   return Math.abs(value) > (Number.isFinite(limit) ? limit : 0);
 };
-const offGeometry = (section) => overGeometry(section, section.dTop) || overGeometry(section, section.dHeight);
+const offGeometry = (section) =>
+  [section.dTop, section.dHeight, section.dLeft ?? 0, section.dWidth ?? 0].some((value) => overGeometry(section, value));
 const offMismatch = (section) => Number.isFinite(mismatchLimit(section)) && section.mismatch * 100 > mismatchLimit(section);
 const colorLimit = (section) => section.figma.maxColor ?? maxColor;
 // Without a limit, a colour difference over COLOR_MARK of the section is marked: shadows and gradients
 // rendered by two engines leave a little below that.
 const COLOR_MARK = 0.5;
+const styleLimit = (section) => section.figma.maxStyle ?? maxStyle;
+const styleCount = (section) => (section.styles ? section.styles.off.length + section.styles.missingText : 0);
+// Without a limit any difference is marked: a value either is Figma's or is not.
+const offStyle = (section) => {
+  const limit = styleLimit(section);
+  return styleCount(section) > (Number.isFinite(limit) ? limit : 0);
+};
 const offColor = (section) => {
   const limit = colorLimit(section);
   return section.color * 100 > (Number.isFinite(limit) ? limit : COLOR_MARK);
@@ -368,9 +410,15 @@ try {
             name: element.getAttribute('data-section'),
             top: rect.top + window.scrollY,
             height: rect.height,
+            left: rect.left + window.scrollX,
+            width: rect.width,
           };
         }),
     );
+    const figmaNodes = readFigmaStyles(config.dir, id, screen.sections);
+    const styleCheck = figmaNodes
+      ? compareStyles(figmaNodes, await page.evaluate(readDom, requestsFor(figmaNodes, screen.sections.map((s) => s.name))))
+      : null;
     await context.close();
     if (domSections.length === 0) {
       throw new Error(
@@ -394,21 +442,30 @@ try {
     write(whole.diff, `${base}-diff.png`);
 
     const { matched, extra } = matchSections(screen.sections, domSections);
-    const boxes = matched.map(({ figma, dom }) => ({ figma, dom: dom && snap(dom.top, dom.height) }));
+    const boxes = matched.map(({ figma, dom }) => ({
+      figma,
+      dom: dom && { ...snap(dom.top, dom.height), ...('left' in figma ? toX(snap(dom.left, dom.width)) : {}) },
+    }));
     const sections = boxes.map(({ figma, dom }, index) => {
       if (!dom) return { name: figma.name, missing: true, figma };
-      const { dTop, dHeight } = geometry(figma, dom, closestAbove(figma, boxes));
+      const place = geometry(figma, dom, closestAbove(figma, boxes));
       // Rendered but collapsed to nothing: all of it differs, and there is nothing to crop.
-      if (dom.height <= 0) return { name: figma.name, figma, dom, dTop, dHeight, mismatch: 1, color: 0, empty: true };
+      if (dom.height <= 0 || dom.width <= 0) return { name: figma.name, figma, dom, ...place, mismatch: 1, color: 0, empty: true };
       const { top, height } = dom;
-      const expectedCrop = crop(expected, figma.top, figma.height);
-      const actualCrop = crop(actual, top, height);
+      const region = 'left' in figma;
+      const expectedCrop = region ? crop(expected, figma.top, figma.height, figma.left, figma.width) : crop(expected, figma.top, figma.height);
+      const actualCrop = region ? crop(actual, top, height, dom.left, dom.width) : crop(actual, top, height);
       // The capture is the frame-sized viewport. The rows it has are compared; rows of the overlap below it
       // count as mismatched (drawn red in the diff), never as a blank page that happens to match.
-      const width = expected.width;
+      const width = Math.min(expectedCrop.width, actualCrop.width);
       const rows = Math.min(figma.height, height, expected.height - figma.top);
       const captured = Math.min(rows, Math.max(0, actual.height - top));
-      const media = mediaRects.map((r) => ({ ...r, top: r.top - top, bottom: r.bottom - top }));
+      const media = mediaRects.map((r) => ({
+        left: r.left - (region ? dom.left : 0),
+        right: r.right - (region ? dom.left : 0),
+        top: r.top - top,
+        bottom: r.bottom - top,
+      }));
       const result =
         captured > 0 ? compare(crop(expectedCrop, 0, captured), crop(actualCrop, 0, captured), true, media) : null;
       const diff = new PNG({ width, height: rows });
@@ -423,8 +480,7 @@ try {
         name: figma.name,
         figma,
         dom,
-        dTop,
-        dHeight,
+        ...place,
         mismatch: ((result?.mismatched ?? 0) + (rows - captured) * width) / total,
         color: result?.color.share ?? 0,
         colorPair: result?.color.pair ?? null,
@@ -432,6 +488,13 @@ try {
         belowCapture: rows - captured,
       };
     });
+    if (styleCheck) {
+      sections.forEach((section, index) => {
+        const found = styleCheck.sections.get(index) ?? { checked: 0, off: [], unmatched: 0 };
+        const missing = styleCheck.missingText.filter((m) => m.section === index).length;
+        section.styles = { ...found, missingText: missing };
+      });
+    }
     // A section that is missing from the DOM counts as a full mismatch, never as 0 %.
     const mean =
       sections.reduce((sum, section) => sum + (section.missing ? 1 : section.mismatch), 0) /
@@ -446,6 +509,7 @@ try {
       sections,
       extraDom: extra,
       problems,
+      missingText: styleCheck?.missingText.map((m) => ({ ...m, section: screen.sections[m.section].name })) ?? null,
     });
   }
 } finally {
@@ -478,23 +542,47 @@ for (const r of results) {
   lines.push(
     `## ${r.id}${r.node ? ` (${r.node})` : ''}`,
     '',
-    '| # | Section | Figma top/h | DOM top/h | Δ top | Δ height | Mismatch | Colour |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| # | Section | Figma top/h | DOM top/h | Δ top | Δ height | Mismatch | Colour |${r.missingText ? ' Styles |' : ''}`,
+    `| --- | --- | --- | --- | --- | --- | --- | --- |${r.missingText ? ' --- |' : ''}`,
   );
   r.sections.forEach((s, index) => {
-    const figma = `${s.figma.top}/${s.figma.height}`;
+    // A region also shows where it sits across: top/height @ left/width.
+    const figma = `${s.figma.top}/${s.figma.height}${'left' in s.figma ? ` @ ${s.figma.left}/${s.figma.width}` : ''}`;
     if (s.missing) {
-      lines.push(`| ${index} | ${s.name} | ${figma} | — | — | — | missing in DOM | — |`);
+      lines.push(`| ${index} | ${s.name} | ${figma} | — | — | — | missing in DOM | — |${r.missingText ? ' — |' : ''}`);
       return;
     }
     const mark = (value) => `${signed(value)}${overGeometry(s, value) ? ' ←' : ''}`;
+    const across = (value, axis) => ('dLeft' in s ? ` · ${axis} ${mark(value)}` : '');
+    const domBox = `${s.dom.top}/${s.dom.height}${'left' in s.figma ? ` @ ${s.dom.left}/${s.dom.width}` : ''}`;
     const mismatch = s.empty ? 'empty in DOM (0 px)' : `${pct(s.mismatch)}${offMismatch(s) ? ' ←' : ''}`;
     const pair = s.colorPair && s.color >= 0.001 ? ` ${s.colorPair}${s.colorPairShare < 0.995 ? ` (${Math.round(s.colorPairShare * 100)} %)` : ''}` : '';
     const color = s.empty ? '—' : `${pct(s.color)}${offColor(s) ? ' ←' : ''}${pair}`;
     lines.push(
-      `| ${index} | ${s.name} | ${figma} | ${s.dom.top}/${s.dom.height} | ${mark(s.dTop)} | ${mark(s.dHeight)} | ${mismatch} | ${color} |`,
+      `| ${index} | ${s.name} | ${figma} | ${domBox} | ${mark(s.dTop)}${across(s.dLeft, 'left')} | ${mark(s.dHeight)}${across(s.dWidth, 'width')} | ${mismatch} | ${color} |${
+        s.styles
+          ? ` ${styleCount(s) ? `${styleCount(s)} of ${s.styles.checked + s.styles.missingText}` : `${s.styles.checked} ✓`}${offStyle(s) ? ' ←' : ''}${
+              s.styles.unmatched ? ` · ${s.styles.unmatched} without an element` : ''
+            } |`
+          : r.missingText
+            ? ' — |'
+            : ''
+      }`,
     );
   });
+  const styled = r.sections.filter((s) => s.styles?.off.length);
+  if (styled.length) {
+    lines.push('', 'Values that differ from Figma (Figma → build):');
+    for (const s of styled) {
+      const byNode = new Map();
+      for (const off of s.styles.off) byNode.set(off.label, [...(byNode.get(off.label) ?? []), `${off.property} ${off.figma} → ${off.dom}`]);
+      for (const [label, list] of byNode) lines.push(`- ${s.name}: ${label} ${list.join(', ')}`);
+    }
+  }
+  if (r.missingText?.length) {
+    lines.push('', 'Figma text not found in its section (changed, missing or split across elements):');
+    for (const m of r.missingText) lines.push(`- ${m.section}: «${m.text.trim().replace(/\s+/g, ' ').slice(0, 60)}»`);
+  }
   const below = r.sections.filter((s) => s.belowCapture > 0);
   if (below.length) {
     lines.push(
@@ -504,7 +592,7 @@ for (const r of results) {
     for (const s of below) lines.push(`- ${s.name}: ${s.belowCapture} px`);
   }
   const overrides = r.sections.filter((s) =>
-    ['maxGeometry', 'maxMismatch', 'maxColor', 'reason'].some((key) => key in s.figma),
+    ['maxGeometry', 'maxMismatch', 'maxColor', 'maxStyle', 'reason'].some((key) => key in s.figma),
   );
   if (overrides.length) {
     lines.push('', 'Section limits:');
@@ -513,6 +601,7 @@ for (const r of results) {
         'maxGeometry' in figma ? `${figma.maxGeometry} px` : '',
         'maxMismatch' in figma ? `${figma.maxMismatch}%` : '',
         'maxColor' in figma ? `colour ${figma.maxColor}%` : '',
+        'maxStyle' in figma ? `${figma.maxStyle} style differences` : '',
       ].filter(Boolean);
       lines.push(`- ${name}: ${limits.join(', ') || 'default limits'}${figma.reason ? ` — ${figma.reason}` : ''}`);
     }
@@ -532,6 +621,7 @@ for (const r of results) {
     r.sections.some((s) => s.missing) ? 'missing sections' : '',
     moved.length ? `top/height off: ${moved.join(', ')}` : '',
     recolored.length ? `colour off: ${recolored.join(', ')}` : '',
+    r.sections.some((s) => !s.missing && offStyle(s)) ? `values off: ${r.sections.filter((s) => !s.missing && offStyle(s)).map((s) => s.name).join(', ')}` : '',
     r.problems.length ? `${r.problems.length} console errors` : '',
   ].filter(Boolean);
   console.log(
@@ -571,7 +661,9 @@ if (Number.isFinite(maxGeometry)) {
           `${r.id}/${section.name}: ${
             section.missing
               ? 'missing'
-              : `top ${signed(section.dTop)}, height ${signed(section.dHeight)} px (limit ${geometryLimit(section)} px)`
+              : `top ${signed(section.dTop)}, height ${signed(section.dHeight)}${
+                  'dLeft' in section ? `, left ${signed(section.dLeft)}, width ${signed(section.dWidth)}` : ''
+                } px (limit ${geometryLimit(section)} px)`
           }`,
       ),
   );
@@ -596,6 +688,25 @@ if (Number.isFinite(maxColor)) {
   );
   if (failing.length > 0) {
     console.error(`\nFailed (colour differs in > ${maxColor}% of a section):\n  ${failing.join('\n  ')}`);
+    process.exitCode = 1;
+  }
+}
+
+if (Number.isFinite(maxStyle)) {
+  const failing = results.flatMap((r) =>
+    r.sections
+      .filter((section) => section.missing || (section.styles && offStyle(section)))
+      .map((section) =>
+        section.missing
+          ? `${r.id}/${section.name}: missing`
+          : `${r.id}/${section.name}: ${styleCount(section)} value(s) differ from Figma (limit ${styleLimit(section)}): ${[
+              ...section.styles.off.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`),
+              ...(section.styles.missingText ? [`${section.styles.missingText} text(s) not found`] : []),
+            ].join('; ')}`,
+      ),
+  );
+  if (failing.length > 0) {
+    console.error(`\nFailed (values differ from Figma):\n  ${failing.join('\n  ')}`);
     process.exitCode = 1;
   }
 }

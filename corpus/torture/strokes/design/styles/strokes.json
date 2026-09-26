@@ -1,0 +1,547 @@
+{
+  "frame": "2:2",
+  "name": "t-strokes",
+  "width": 375,
+  "height": 480,
+  "nodes": [
+    {
+      "id": "2:3",
+      "name": "inside",
+      "type": "FRAME",
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 96,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 0,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:4",
+      "name": "card",
+      "type": "FRAME",
+      "x": 20,
+      "y": 16,
+      "width": 335,
+      "height": 64,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#FFFFFF",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "FIXED"
+      ],
+      "radius": 12,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": "#D0D5DD",
+          "opacity": 1
+        }
+      ],
+      "strokeAlign": "INSIDE",
+      "strokeWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:5",
+      "name": "Inside stroke · 1 px",
+      "type": "TEXT",
+      "x": 41,
+      "y": 38,
+      "width": 133,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "characters": "Inside stroke · 1 px",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:6",
+      "name": "center",
+      "type": "FRAME",
+      "x": 0,
+      "y": 96,
+      "width": 375,
+      "height": 96,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 0,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:7",
+      "name": "card",
+      "type": "FRAME",
+      "x": 20,
+      "y": 112,
+      "width": 335,
+      "height": 64,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#FFFFFF",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "FIXED"
+      ],
+      "radius": 12,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": "#D0D5DD",
+          "opacity": 1
+        }
+      ],
+      "strokeAlign": "CENTER",
+      "strokeWeights": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:8",
+      "name": "Center stroke · 2 px",
+      "type": "TEXT",
+      "x": 40,
+      "y": 134,
+      "width": 141,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "characters": "Center stroke · 2 px",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:9",
+      "name": "outside",
+      "type": "FRAME",
+      "x": 0,
+      "y": 192,
+      "width": 375,
+      "height": 96,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 0,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:10",
+      "name": "card",
+      "type": "FRAME",
+      "x": 20,
+      "y": 208,
+      "width": 335,
+      "height": 64,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#FFFFFF",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "FIXED"
+      ],
+      "radius": 12,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": "#D0D5DD",
+          "opacity": 1
+        }
+      ],
+      "strokeAlign": "OUTSIDE",
+      "strokeWeights": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:11",
+      "name": "Outside stroke · 2 px",
+      "type": "TEXT",
+      "x": 40,
+      "y": 230,
+      "width": 148,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "characters": "Outside stroke · 2 px",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:12",
+      "name": "dashed",
+      "type": "FRAME",
+      "x": 0,
+      "y": 288,
+      "width": 375,
+      "height": 96,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 0,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:13",
+      "name": "card",
+      "type": "FRAME",
+      "x": 20,
+      "y": 304,
+      "width": 335,
+      "height": 64,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#FFFFFF",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "FIXED"
+      ],
+      "radius": 12,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": "#D0D5DD",
+          "opacity": 1
+        }
+      ],
+      "strokeAlign": "INSIDE",
+      "strokeWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "dashPattern": [
+        4,
+        4
+      ],
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:14",
+      "name": "Dashed · 1 px · 4/4",
+      "type": "TEXT",
+      "x": 41,
+      "y": 326,
+      "width": 133,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "characters": "Dashed · 1 px · 4/4",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:15",
+      "name": "thick",
+      "type": "FRAME",
+      "x": 0,
+      "y": 384,
+      "width": 375,
+      "height": 96,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 0,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:16",
+      "name": "card",
+      "type": "FRAME",
+      "x": 20,
+      "y": 400,
+      "width": 335,
+      "height": 64,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#F9FAFB",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "FIXED"
+      ],
+      "radius": 16,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": "#7F56D9",
+          "opacity": 1
+        }
+      ],
+      "strokeAlign": "INSIDE",
+      "strokeWeights": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:17",
+      "name": "Inside · 2 px · radius 16",
+      "type": "TEXT",
+      "x": 42,
+      "y": 422,
+      "width": 163,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "characters": "Inside · 2 px · radius 16",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    }
+  ]
+}

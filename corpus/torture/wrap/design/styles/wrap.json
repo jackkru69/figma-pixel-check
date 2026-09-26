@@ -1,0 +1,356 @@
+{
+  "frame": "2:43",
+  "name": "t-wrap",
+  "width": 375,
+  "height": 374,
+  "nodes": [
+    {
+      "id": "2:44",
+      "name": "tight-title",
+      "type": "FRAME",
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 82,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 8,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:45",
+      "name": "Transfer to savings account",
+      "type": "TEXT",
+      "x": 20,
+      "y": 16,
+      "width": 229,
+      "height": 22,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "HUG"
+      ],
+      "characters": "Transfer to savings account",
+      "fontFamily": "Inter",
+      "fontStyle": "Semi Bold",
+      "fontWeight": 600,
+      "fontSize": 17,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 22
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:46",
+      "name": "Your balance is updated every few minutes",
+      "type": "TEXT",
+      "x": 20,
+      "y": 46,
+      "width": 305,
+      "height": 20,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#475467",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "HUG"
+      ],
+      "characters": "Your balance is updated every few minutes",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:47",
+      "name": "button-label",
+      "type": "FRAME",
+      "x": 0,
+      "y": 82,
+      "width": 375,
+      "height": 80,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#F9FAFB",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 8,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:48",
+      "name": "button",
+      "type": "FRAME",
+      "x": 20,
+      "y": 98,
+      "width": 250,
+      "height": 48,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#7F56D9",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "HUG",
+        "HUG"
+      ],
+      "radius": 8,
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "CENTER",
+      "counterAxisAlignItems": "CENTER",
+      "itemSpacing": 0,
+      "padding": [
+        12,
+        16,
+        12,
+        16
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:49",
+      "name": "Continue with bank account",
+      "type": "TEXT",
+      "x": 36,
+      "y": 110,
+      "width": 218,
+      "height": 24,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#FFFFFF",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "HUG"
+      ],
+      "characters": "Continue with bank account",
+      "fontFamily": "Inter",
+      "fontStyle": "Semi Bold",
+      "fontWeight": 600,
+      "fontSize": 16,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 24
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:50",
+      "name": "paragraph",
+      "type": "FRAME",
+      "x": 0,
+      "y": 162,
+      "width": 375,
+      "height": 120,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "VERTICAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 8,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:51",
+      "name": "Payments sent after 6 pm are processed on the next business day. International transfers can take up to three days, and a small fee may apply depending on the destination country.",
+      "type": "TEXT",
+      "x": 20,
+      "y": 178,
+      "width": 335,
+      "height": 88,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "characters": "Payments sent after 6 pm are processed on the next business day. International transfers can take up to three days, and a small fee may apply depending on the destination country.",
+      "fontFamily": "Inter",
+      "fontStyle": "Regular",
+      "fontWeight": 400,
+      "fontSize": 15,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 22
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:52",
+      "name": "columns",
+      "type": "FRAME",
+      "x": 0,
+      "y": 282,
+      "width": 375,
+      "height": 92,
+      "sizing": [
+        "FILL",
+        "HUG"
+      ],
+      "radius": 0,
+      "layoutMode": "HORIZONTAL",
+      "layoutWrap": "NO_WRAP",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "itemSpacing": 16,
+      "padding": [
+        16,
+        20,
+        16,
+        20
+      ],
+      "strokesIncludedInLayout": true
+    },
+    {
+      "id": "2:53",
+      "name": "Internationalization settings",
+      "type": "TEXT",
+      "x": 20,
+      "y": 298,
+      "width": 120,
+      "height": 40,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "HUG"
+      ],
+      "characters": "Internationalization settings",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    },
+    {
+      "id": "2:54",
+      "name": "Notifications and sounds for every device",
+      "type": "TEXT",
+      "x": 156,
+      "y": 298,
+      "width": 120,
+      "height": 60,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": "#101828",
+          "opacity": 1
+        }
+      ],
+      "sizing": [
+        "FIXED",
+        "HUG"
+      ],
+      "characters": "Notifications and sounds for every device",
+      "fontFamily": "Inter",
+      "fontStyle": "Medium",
+      "fontWeight": 500,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PIXELS",
+        "value": 0
+      },
+      "textCase": "ORIGINAL"
+    }
+  ]
+}

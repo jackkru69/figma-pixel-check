@@ -4,25 +4,33 @@
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "sheet-top": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.86,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "smoothing": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "clip": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     }
   },
   "spacingFlags": {}

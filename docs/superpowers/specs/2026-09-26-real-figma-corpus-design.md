@@ -95,3 +95,15 @@ text percentages that reward a wrong weight.
 Left open (not seen by any check): the colour of small text (9 of 11 missed), radius changes of a few px
 (6 of 12), font weight (5 of 12), 2 px shifts of small elements (weak signal only). All of these need Figma's
 own values: comparing computed styles with the saved `get_design_context` code is the next step.
+
+## Second release: the style check
+
+The benchmark showed where pixels stop (font weight 3/12, radius 1/12, text colour 0/11). `figma-styles.js`
+exports every node's values through `use_figma`; `style-check.mjs` finds the elements (texts by their text in
+their section, other nodes by `data-node-id`) and compares fonts, colours, opacity, size, radii, strokes,
+shadows, blurs, gradients, and Auto Layout gap and padding as laid out. Four agents tagged the 12 screens and
+tried to break it; seven kinds of false positive (parent opacity, table cells, colgroup, borders drawn as a
+child's divider, one-sided strokes, CENTER strokes, hugging sizes) were fixed. 334 nodes are compared with no
+difference on the corpus, and detection went from 110 to 157 of 167: text colour 11/11, font weight 11/12,
+radius 12/12, opacity 10/10. Two real structure differences were found and fixed in the corpus (a section
+without its own padding, a table header fill on the cells). Sections also gained regions (`left`, `width`).

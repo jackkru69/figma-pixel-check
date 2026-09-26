@@ -4,25 +4,33 @@
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "rows": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.29,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "chips": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.23,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "full-divider": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.79,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     }
   },
   "spacingFlags": {}

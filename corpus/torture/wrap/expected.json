@@ -4,25 +4,33 @@
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.82,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "button-label": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.59,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "paragraph": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 3.57,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "columns": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 1.08,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     }
   },
   "spacingFlags": {

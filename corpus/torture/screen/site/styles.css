@@ -94,7 +94,7 @@ button {
 
 /* Scrolling content: clears the tab bar and the floating button at the end of the list. */
 .content {
-  padding: 16px 20px calc(var(--tabbar-height) + 88px);
+  padding: 16px 0 calc(var(--tabbar-height) + 88px);
 }
 
 .balance {
@@ -102,6 +102,7 @@ button {
   flex-direction: column;
   gap: 6px;
   height: 172px;
+  margin: 0 20px;
   padding: 20px;
   border-radius: 20px;
   background: linear-gradient(152.82deg, var(--color-brand-dark) 14.644%, var(--color-brand) 85.356%);
@@ -136,6 +137,7 @@ button {
   flex-direction: column;
   gap: 4px;
   margin-top: 24px;
+  padding: 0 20px;
 }
 
 .recent__title {

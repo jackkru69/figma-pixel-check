@@ -4,25 +4,33 @@
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 1.22,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "table-head": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.23,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "table-body": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 1.02,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     },
     "total": {
       "dTop": 0,
       "dHeight": 0,
       "mismatch": 0.47,
-      "color": 0
+      "color": 0,
+      "styles": [],
+      "missingText": 0
     }
   },
   "spacingFlags": {}

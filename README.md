@@ -3,8 +3,8 @@
 [![example](https://github.com/jackkru69/figma-pixel-check/actions/workflows/example.yml/badge.svg)](https://github.com/jackkru69/figma-pixel-check/actions/workflows/example.yml)
 
 A [Claude Code](https://claude.com/claude-code) skill for building web screens from Figma frames and
-**proving** they match. It uses a per-section pixel diff, a colour check and a spacing audit against
-reference PNGs exported from Figma, and never judges by eye.
+**proving** they match. It uses a per-section pixel diff, a colour check, a check of Figma's own values
+against the computed styles and a spacing audit, and never judges by eye.
 
 Most "pixel-perfect" checks compare whole screenshots. Then one block that is 8 px too tall turns
 everything below it red, and the number no longer tells you what is wrong. Here each screen is split into
@@ -22,7 +22,15 @@ report shows which section is off, whether its position, its height or its pixel
 Geometry is blamed the same way: **Δ top** is a section's own displacement, so the sections that the
 shorter hero pulls up show 0, and in CI `--max-geometry=1` fails on the hero alone. The pixel diff is tuned
 to ignore text rasterisation, which also makes it blind to a neighbouring colour token or a lost opacity;
-the **Colour** column compares the flat areas separately and names the colours that differ.
+the **Colour** column compares the flat areas separately and names the colours that differ. And because
+pixels cannot tell a font weight of 500 from 600 or a radius of 8 from 12, the **Styles** column compares
+Figma's own values (exported once per screen through the Figma MCP) with the computed styles:
+
+```
+- hero: «Alex Kim» font-weight 600 → 500
+- action: button 9:5 radius 14 → 8
+- nav: nav 9:1 gap 12 → 16
+```
 
 The spacing audit then measures every section in both images:
 
@@ -95,9 +103,10 @@ real pixel difference. `npm test` runs the CI limits against a copy of it.
 
 | Script                           | What it does                                                                                   |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pixel-diff.mjs [ids] [--skip-build] [--max-section=N] [--max-geometry=PX] [--max-color=N]` | builds, serves, captures and compares geometry, pixels and colours; writes `diff/report.md`, `results.json` and crops; the limits fail CI |
+| `pixel-diff.mjs [ids] [--skip-build] [--max-section=N] [--max-geometry=PX] [--max-color=N] [--max-style=N]` | builds, serves, captures and compares geometry, pixels, colours and Figma's values; writes `diff/report.md`, `results.json` and crops; the limits fail CI |
 | `spacing-audit.mjs`              | margins, paddings, heights and gaps of every section, reference versus build (`SPACING-AUDIT.md`, `diff/spacing.json`) |
 | `responsive-audit.mjs [ids] [--fail] [--update-known]` | every screen at six phone sizes: a screenshot strip, and sideways scroll, elements off-screen or clipped, wider than their box, overflowing text, content under pinned bars and floating buttons; accepted findings are pinned to their devices and sizes |
+| `figma-styles.js`                | read-only script for the Figma MCP `use_figma`: every node's values, for the style check (`style-check.mjs`) |
 | `figma-boxes.py <node> [--sections]` | boxes of a frame's nodes from saved `get_metadata` XML, or a sections-file skeleton           |
 | `serve-dist.mjs`                 | static server with an SPA fallback, used by `pixel-diff`                                         |
 
@@ -112,13 +121,14 @@ masks, transparency, a list, a full screen with pinned bars, icons, a dense tabl
 skill's own loop. They run in CI as regression fixtures, and `npm run bench` injects 167 realistic mistakes
 into them to measure what the checks catch ([`corpus/BENCHMARK.md`](corpus/BENCHMARK.md)). Building them
 found the colour blind spot, text rendered unlike Figma on Linux, and responsive checks that missed clipped
-text and floating buttons; with those fixed, detection went from 84 to 110 of 167.
+text and floating buttons, and showed where pixels stop: font weight, text colour and radius. With the fixes
+and the style check, detection went from 84 to 157 of 167.
 
 ## Limits
 
 Web only (Chromium through Playwright), device scale factor 1, one reference viewport per sections file,
-static states. The colour of small text, small radius changes and font weight are not seen (check them
-against Figma's code values). Each of these is spelled out in the method reference.
+static states. Without the exported styles, the colour of small text, small radius changes and font weight
+are not seen. Each of these is spelled out in the method reference.
 
 ---
 

@@ -3,7 +3,8 @@
   "private": true,
   "description": "Dev dependencies for running the bundled example; the plugin itself needs none of them.",
   "scripts": {
-    "example": "cd examples/basic && node ../../skills/figma-pixel-check/scripts/pixel-diff.mjs && node ../../skills/figma-pixel-check/scripts/spacing-audit.mjs && node ../../skills/figma-pixel-check/scripts/responsive-audit.mjs --fail"
+    "example": "cd examples/basic && node ../../skills/figma-pixel-check/scripts/pixel-diff.mjs && node ../../skills/figma-pixel-check/scripts/spacing-audit.mjs && node ../../skills/figma-pixel-check/scripts/responsive-audit.mjs --fail",
+    "test": "node --test"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

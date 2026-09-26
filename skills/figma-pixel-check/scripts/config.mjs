@@ -1,5 +1,5 @@
 // Settings shared by pixel-diff.mjs, spacing-audit.mjs and responsive-audit.mjs: figma-pixel.config.json in the working directory
-// (or --config=<file>). Every key is optional; DEFAULTS documents them.
+// (or --config=<file>, --config <file>). Every key is optional; DEFAULTS documents them.
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -34,8 +34,10 @@ export const DEFAULTS = {
 };
 
 export function loadConfig(args = process.argv.slice(2)) {
-  const option = args.find((arg) => arg.startsWith('--config='));
-  const file = resolve(option ? option.slice('--config='.length) : 'figma-pixel.config.json');
+  const index = args.findIndex((arg) => arg === '--config' || arg.startsWith('--config='));
+  const option = index === -1 ? undefined : args[index] === '--config' ? args[index + 1] : args[index].slice(9);
+  if (index !== -1 && !option) throw new Error('--config: expected a file name');
+  const file = resolve(option ?? 'figma-pixel.config.json');
   if (option && !existsSync(file)) throw new Error(`Config not found: ${file}`);
   const user = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
   const unknown = Object.keys(user).filter((key) => !(key in DEFAULTS) && !key.startsWith('//'));

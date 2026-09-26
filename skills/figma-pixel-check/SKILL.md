@@ -29,8 +29,10 @@ Skip this if the project already has `figma-pixel.config.json`.
 1. Copy the scripts into the project, where CI can run them without Claude and Node resolves their
    dependencies from the project's `node_modules`:
    `mkdir -p scripts/figma-pixel && cp ${CLAUDE_SKILL_DIR}/scripts/* scripts/figma-pixel/`
-2. Install the dev dependencies with the project's package manager: `pixelmatch`, `pngjs`, `@playwright/test`,
+2. Install the dev dependencies with the project's package manager: `pixelmatch@7`, `pngjs@7`, `@playwright/test`,
    then `npx playwright install chromium` (skip when a Chromium for that Playwright version is present).
+   Keep pixelmatch on 7: the next major changes the colour metric, and every number in the method reference
+   was calibrated on 7.
 3. Add scripts to `package.json`: `"pixel:diff": "node scripts/figma-pixel/pixel-diff.mjs"` and
    `"spacing": "node scripts/figma-pixel/spacing-audit.mjs"`,
    `"responsive": "node scripts/figma-pixel/responsive-audit.mjs"`.
@@ -67,7 +69,8 @@ Skip this if the project already has `figma-pixel.config.json`.
    of each band; names match the sections file.
 6. **Check.** `npm run pixel:diff -- <id>` (add `--skip-build` when the build is fresh), then
    `npm run spacing`. Read `design/figma/diff/report.md` and fix in this order:
-   1. sections missing in the DOM, then any section whose DOM top or height differs from Figma;
+   1. sections missing in the DOM, then any section with a non-zero **Δ top** or **Δ height** (the section
+      itself is off; sections that are only pushed by one above show Δ top 0);
    2. flagged values in `SPACING-AUDIT.md` (margins, paddings, gaps);
    3. the worst percentages: open that section's `-diff.png` next to `-expected.png` and `-actual.png`.
 
@@ -78,11 +81,14 @@ Skip this if the project already has `figma-pixel.config.json`.
    (360 to 440 px wide by default). Look at the strip `design/figma/diff/responsive/<id>.png` and fix each
    finding in `report.md`: an element cut by the screen edge, wider than its box, text that does not fit,
    or content covered by a bottom-pinned bar at the end of scrolling. What the design itself draws that way
-   and cannot be seen goes into `design/figma/responsive-known.json` via `--update-known`, with the reason
-   in `PIXEL-SPEC.md`. Keep 375 px (the design width) unchanged: re-run pixel-diff after these fixes.
+   and cannot be seen goes into `design/figma/responsive-known.json` via `--update-known`, which pins each
+   finding to the devices and the size seen now; add its `reason` there and in `PIXEL-SPEC.md`. Never
+   accept a finding that is visible. Keep 375 px (the design width) unchanged: re-run pixel-diff after these fixes.
 8. **Record.** Update `PIXEL-SPEC.md`: the summary row with both numbers, then **Fixed**, **Kept on purpose**
    (with the reason) and **Open** (with what is needed and from whom). Mark the screen as done in the
    project's screen index if it has one.
 9. **Done** when the project's own checks and build pass, pixel-diff and the responsive audit report no console
    errors, CSP violations or new findings, and every remaining mismatch is explained in `PIXEL-SPEC.md`. In
-   CI, `pixel-diff.mjs --max-section=<percent>` and `responsive-audit.mjs --fail` fail the job on a regression.
+   CI, `pixel-diff.mjs --max-section=<percent> --max-geometry=1` and `responsive-audit.mjs --fail` fail the
+   job on a regression; a difference kept on purpose gets its own `maxGeometry` / `maxMismatch` and `reason`
+   on its section in the sections file.

@@ -9,10 +9,14 @@
    the frame size with `deviceScaleFactor: 1`. Animations, transitions and the caret are frozen, and
    `captureCss` is added. The capture CSS is served from the page's own origin, so a CSP with
    `style-src 'self'` stays enforced.
-3. After `networkidle`, fonts and images, the page is captured, and every `[data-section]` element's box is read.
+3. After `networkidle`, fonts and images (at most 5 s for images; the ones still loading are printed), the
+   page is captured, and the box of every rendered `[data-section]` element is read. An element that is not
+   rendered (`display: none`, e.g. the desktop twin of a mobile nav) is skipped; boxes are snapped to whole
+   pixels by their edges, as Chromium paints them.
 4. Figma sections are matched to DOM sections **by name** (a repeated name matches its n-th occurrence).
    Each section is cropped from its own top in both images; the overlapping rows are compared with
-   `pixelmatch` (threshold `0.25`).
+   `pixelmatch` (threshold `0.25`; transparent pixels of the reference count as white). The geometry of every
+   section is compared too: **Δ top** and **Δ height** (see [Reading the numbers](#reading-the-numbers)).
 5. Console errors, page errors and CSP violations fail the run (exit code 1): a blocked stylesheet or
    script changes the page silently, and the numbers would be measured on the wrong page.
 
@@ -42,17 +46,22 @@ design/figma/
   "sections": [
     { "name": "nav", "top": 53, "height": 40 },
     { "name": "bank-card", "top": 109, "height": 200 },
-    { "name": "history", "top": 483, "height": 248 }
+    { "name": "history", "top": 483, "height": 248, "maxMismatch": 9, "reason": "dense text, font rasterisation" }
   ]
 }
 ```
 
 - `width`/`height`: the frame size; the reference PNG must have exactly this size.
 - `top`/`height`: relative to the frame, in Figma pixels. Get them with `figma-boxes.py <node-id>` (tree) or
-  `figma-boxes.py <node-id> --sections` (a skeleton from the frame's direct children).
+  `figma-boxes.py <node-id> --sections` (a skeleton from the frame's direct children). Fractional values
+  are snapped by their edges (top 13.5, height 20 → 14/20), like the DOM boxes.
 - `url` (optional) overrides the route of this screen: several states of one screen, query parameters.
 - `node` (optional) is shown in the reports.
 - Sections do not have to cover the frame; gaps between bands are simply not compared.
+- `maxGeometry` (px) and `maxMismatch` (%) (optional) replace the `--max-geometry` / `--max-section` limits
+  for one section, stricter or looser, in runs that pass that flag; `reason` is printed with them in the
+  report. Use them for the differences recorded under "Kept on purpose", so CI keeps the tight limit
+  everywhere else.
 
 ## `figma-pixel.config.json`
 
@@ -103,12 +112,15 @@ works too: `"build": "npm run build-storybook"`, `"dist": "storybook-static"`, a
 ## Outputs
 
 - `diff/report.md`: per screen, the mean over sections and the whole-page number, then every section with
-  Figma top/height, DOM top/height and its mismatch.
-- `diff/results.json`: the same data for tooling.
-- `diff/<id>-<width>-actual.png`, `-diff.png`: the full capture and mask.
+  Figma top/height, DOM top/height, Δ top, Δ height and its mismatch; `←` marks what is over its limit.
+- `diff/results.json`: the same data for tooling (`dTop`, `dHeight`, `mismatch` per section).
+- `diff/<id>-<width>-actual.png`, `-diff.png`: the full capture and mask. In a mask, red is where the build
+  is lighter than Figma (ink missing), blue where it is darker (extra ink), yellow is anti-aliasing (not
+  counted); a line of text 1 px too low shows as a blue band under a red one.
 - `diff/<id>-<width>-<n>-<section>-expected.png`, `-actual.png`, `-diff.png`: every section crop.
 - `SPACING-AUDIT.md` (from `spacing-audit.mjs`): per section, the left and right margins, top and bottom
-  padding, height and the gaps between items in a row, reference versus build.
+  padding, height and the gaps between items in a row, reference versus build. Gaps are flagged pairwise
+  when both images have as many; a different count is shown but not flagged.
 
 ## Other phone sizes
 
@@ -124,24 +136,55 @@ opens every screen from `sections/` at each of `devices` (default: 360×640, 360
 | `text overflow`         | text wider than its own box (`text cut by an ellipsis` when it ends in `…`)                    |
 | `covered`               | at the end of scrolling, content under an element pinned to the bottom (fixed or sticky)        |
 
-Only the outermost offender is reported, decoration under `aria-hidden="true"` is skipped, and with a
-dialog open (`aria-modal`, `role="dialog"`, `<dialog open>`) only the dialog's content is checked for being
-covered. Screenshots are of the viewport, as on a phone; `--full-page` captures the whole page instead
+Only the outermost offender is reported. What cannot be seen is skipped: decoration under
+`aria-hidden="true"`, elements hidden by `visibility` or `opacity`, and screen-reader-only boxes of 1×1 px.
+A negative margin is an intended bleed and is not "wider than its box". With a dialog open (`aria-modal`,
+`role="dialog"`, `<dialog open>`) only the dialog's content is checked for being covered. An element is
+named by its section, tag and first 40 characters of text, or, without text, by its `aria-label`, `alt`
+or `title`. Screenshots are of the viewport, as on a phone; `--full-page` captures the whole page instead
 (pinned bars then appear where the viewport ended).
 
 Per-device safe areas go into `captureCss` of the device, e.g.
 `{ "name": "iPhone 16", "width": 393, "height": 852, "captureCss": ":root { --safe-top: 59px; --safe-bottom: 34px; }" }`.
 
 Findings that the design itself draws and that cannot be seen (a masked number 2 px wider than its row)
-are accepted with `--update-known`, which writes `responsive-known.json` (`{screen: [finding]}`, without
-the pixel amounts). Record why in `PIXEL-SPEC.md`. `--fail` then fails only on new findings.
+are accepted with `--update-known`, which writes `responsive-known.json`. Every entry is pinned to the
+devices it was seen on and to the size measured there plus 2 px (text sets a pixel or two wider on
+another OS):
+
+```json
+{
+  "card-balance": [
+    {
+      "finding": "text overflow: [bank-card] span «12 480,00 ₽»",
+      "maxPx": { "Small Android": 3, "Android": 3 },
+      "reason": "the design's amount is wider than its column and masked"
+    }
+  ]
+}
+```
+
+`--fail` then fails only on new findings, and the same finding counts as new on a device that is not
+listed or when it grows past its size: the report says `known up to 3 px` or `known on Small Android,
+Android only`. Write the `reason` by hand (`--update-known` keeps it) and record it in `PIXEL-SPEC.md` too.
+`"maxPx": 3` holds on every device, and a bare `"<kind>: <what>"` string, the older format, holds on every
+device at any size; `--update-known` rewrites the screens it audits in the pinned form. Entries that no
+longer occur are listed in the report. Devices are named as in `devices`; one without a name, or with a
+name another device shares, is keyed by its size (`"360×640"`, `"Android 360×780"`).
 
 ## Reading the numbers
 
 - **Sections (mean)** is the metric. A section missing from the DOM counts as 100 %, never as 0 %.
 - **Whole page** is a diagnostic of accumulated shift only.
 - A percentage without the geometry is not enough: a band that is only taller in empty space shows 0 %
-  but a different height. Check the top/height columns first.
+  but a different height. Check **Δ top** and **Δ height** first.
+- **Δ height** is DOM height − Figma height. **Δ top** is the section's own displacement: the smaller of
+  its shift against the frame and its shift against the bottom of the closest section above. So when the
+  hero is 8 px shorter, the hero shows Δ height −8 and every section below it, moved up by 8 px, shows
+  Δ top 0; a bar pinned to the bottom of the screen is not blamed either. "Above" is by position in the
+  frame, so a section nested inside another (an avatar inside the hero) is never the reference for the
+  sections below. A non-zero Δ top points at the section itself: its margin, the gap above it, or its own
+  positioning.
 - After a correct layout, screens usually land at 1–4 % and text-heavy sections at up to ~7 %. Figma and
   Chromium rasterise text differently, and Blink rounds the half-leading of some line heights, which puts
   large headings 1 px higher than in Figma. WebKit rounds the same way, so matching Figma there would make the
@@ -158,7 +201,8 @@ the pixel amounts). Record why in `PIXEL-SPEC.md`. `--fail` then fails only on n
 | Icons darker than the design                              | the icon pipeline dropped the layer opacity; move it into the colour                        |
 | Everything 40–60 px lower or higher                       | the status bar drawn in the frame: set the safe-area variable in `captureCss`              |
 | Console error / CSP violation fails the run               | a library injecting `<style>` or inline scripts, or a 404 asset                            |
-| `no [data-section] elements` after `--skip-build`         | `dist` is a production build without preview routes                                         |
+| `no rendered [data-section] elements` after `--skip-build` | `dist` is a production build without preview routes                                         |
+| `empty in DOM (0 px)`                                     | the marked element collapsed: its children are absolutely positioned or floated             |
 | A spacing flag on a section that looks identical          | a semi-transparent background counted as content by the audit; verify on the crops        |
 
 ## CI
@@ -167,12 +211,19 @@ Commit the reference PNGs and the sections files, install Chromium in the job, a
 
 ```bash
 npx playwright install --with-deps chromium
-node scripts/figma-pixel/pixel-diff.mjs --max-section=10
+node scripts/figma-pixel/pixel-diff.mjs --max-section=10 --max-geometry=1
 node scripts/figma-pixel/responsive-audit.mjs --skip-build --fail
 ```
 
-Choose the limit from the current `PIXEL-SPEC.md` numbers plus a margin: the goal is catching regressions,
-not re-litigating the accepted differences. Upload `design/figma/diff/` as an artifact to inspect failures.
+`--max-geometry=<px>` fails a section whose Δ top or Δ height is larger than the limit. `0` demands the
+same whole pixels; `1` tolerates the pixel that sub-pixel rounding can cost (Figma at 12.5, the build at
+12.4), at the price of letting a real 1 px change through. `--max-section=<percent>` fails a
+section whose mismatch is larger. Choose it from the current `PIXEL-SPEC.md` numbers plus a margin: the
+goal is catching regressions, not re-litigating the accepted differences. A section recorded under "Kept on
+purpose" gets its own `maxGeometry` / `maxMismatch` in the sections file instead of a looser global limit.
+A missing section fails both, and a malformed limit or an unknown flag is an error rather than a disabled
+check. Upload
+`design/figma/diff/` as an artifact to inspect failures.
 
 ## Limits
 

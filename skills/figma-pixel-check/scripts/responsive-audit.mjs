@@ -16,11 +16,19 @@
 // - covered: at the end of scrolling, content is hidden under an element pinned to the bottom (fixed or sticky).
 // Decoration under aria-hidden="true" is skipped. Console errors and CSP violations always fail the run.
 //
-// Screens are the sections/<id>.json files. Known findings: <dir>/responsive-known.json, {screen: [finding]}.
-// Output: <dir>/diff/responsive/<id>.png, report.md and results.json.
+// Screens are the sections/<id>.json files. Output: <dir>/diff/responsive/<id>.png, report.md and results.json.
+//
+// Known findings: <dir>/responsive-known.json, {screen: [entry]}, where an entry is
+//   {"finding": "<kind>: <what>", "maxPx": {"<device name>": <px>, ...}, "reason": "..."}
+// and holds only on the listed devices and up to the listed size: the same finding on another device, or
+// grown past its size, is new. "maxPx": <px> holds on every device; a bare "<kind>: <what>" string (the
+// old format) holds anywhere at any size. --update-known rewrites the audited screens in the first form,
+// with the sizes measured now plus 2 px, and keeps each entry's reason. A device without a name, or
+// with a name another device shares, is keyed by its size ("360×640", "Android 360×780").
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
 import { loadConfig } from './config.mjs';
 import { serveDist } from './serve-dist.mjs';
@@ -32,13 +40,24 @@ const KNOWN_FILE = join(config.dir, 'responsive-known.json');
 const FREEZE_CSS = `*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }`;
 const CAPTURE_PATH = '/__figma-pixel-responsive.css';
 const SCALE = 0.5;
+// --update-known allows this much on top of the measured size: text sets a pixel or two wider on another OS.
+const KNOWN_SLACK = 2;
 
-const args = process.argv.slice(2);
-const skipBuild = args.includes('--skip-build');
-const fail = args.includes('--fail');
-const updateKnown = args.includes('--update-known');
-const fullPage = args.includes('--full-page');
-const only = args.filter((arg) => !arg.startsWith('--'));
+// Strict: a mistyped --fail must not pass CI silently.
+const { values: flags, positionals: only } = parseArgs({
+  allowPositionals: true,
+  options: {
+    'skip-build': { type: 'boolean' },
+    fail: { type: 'boolean' },
+    'update-known': { type: 'boolean' },
+    'full-page': { type: 'boolean' },
+    config: { type: 'string' },
+  },
+});
+const skipBuild = flags['skip-build'] ?? false;
+const fail = flags.fail ?? false;
+const updateKnown = flags['update-known'] ?? false;
+const fullPage = flags['full-page'] ?? false;
 
 if (!existsSync(SECTIONS_DIR)) throw new Error(`No ${SECTIONS_DIR}: the audit takes its screens from there.`);
 const screens = readdirSync(SECTIONS_DIR)
@@ -47,7 +66,74 @@ const screens = readdirSync(SECTIONS_DIR)
   .filter(([id]) => only.length === 0 || only.includes(id));
 const unknown = only.filter((id) => !screens.some(([screenId]) => screenId === id));
 if (unknown.length > 0) throw new Error(`Unknown screen id: ${unknown.join(', ')} (see ${SECTIONS_DIR})`);
-const known = existsSync(KNOWN_FILE) ? JSON.parse(readFileSync(KNOWN_FILE, 'utf8')) : {};
+// How responsive-known.json names a device: its name, or its size when it has none or shares it.
+const labels = config.devices.map((device) => device.name ?? `${device.width}×${device.height}`);
+const deviceKeys = new Map(
+  config.devices.map((device, i) => [
+    device,
+    labels.indexOf(labels[i]) === labels.lastIndexOf(labels[i]) ? labels[i] : `${labels[i]} ${device.width}×${device.height}`,
+  ]),
+);
+const deviceNames = [...deviceKeys.values()];
+const knownFile = existsSync(KNOWN_FILE) ? JSON.parse(readFileSync(KNOWN_FILE, 'utf8')) : {};
+const known = readKnown(knownFile);
+
+/** {screen: [entry]} with every entry as {finding, maxPx: null | number | {device: px}, reason?}. */
+function readKnown(raw) {
+  const entries = {};
+  for (const [id, list] of Object.entries(raw)) {
+    if (id.startsWith('//')) continue;
+    if (!Array.isArray(list)) throw new Error(`${KNOWN_FILE}: "${id}" must be a list of findings`);
+    entries[id] = list.map((entry) => {
+      if (typeof entry === 'string') return { finding: entry, maxPx: null };
+      const { finding, maxPx } = entry ?? {};
+      const size = (px) => Number.isFinite(px) && px >= 0;
+      const sizes =
+        size(maxPx) ||
+        (maxPx !== null &&
+          typeof maxPx === 'object' &&
+          Object.keys(maxPx).length > 0 &&
+          Object.values(maxPx).every(size));
+      // A device name that is not in the config does not match, and the report says which devices it names.
+      if (typeof finding !== 'string' || !sizes) {
+        throw new Error(
+          `${KNOWN_FILE}: ${JSON.stringify(entry)}: expected {"finding": "<kind>: <what>", ` +
+            `"maxPx": {"<device name>": <px>} or <px>}; devices: ${deviceNames.join(', ')}`,
+        );
+      }
+      return entry;
+    });
+  }
+  return entries;
+}
+
+/** Whether a finding on a device is covered by the known file, and if not, why it is still worth a look. */
+function acceptance(id, device, finding) {
+  const entries = known[id] ?? [];
+  const entry =
+    entries.find((candidate) => candidate.finding === keyOf(finding)) ??
+    entries.find((candidate) => candidate.maxPx === null && candidate.finding === aliasOf(finding));
+  if (!entry) return { known: false };
+  const limit = entry.maxPx === null || typeof entry.maxPx === 'number' ? entry.maxPx : entry.maxPx[deviceKeys.get(device)];
+  if (entry.maxPx !== null && limit === undefined) {
+    return { known: false, note: `known on ${Object.keys(entry.maxPx).join(', ')} only` };
+  }
+  if (limit !== null && finding.px > limit) return { known: false, note: `known up to ${limit} px` };
+  return { known: true };
+}
+
+/** Runs in the page: fonts, then images, at most 5 s for the images. Returns the ones still loading. */
+async function waitForAssets() {
+  await document.fonts.ready;
+  const loading = () => [...document.images].filter((img) => !img.complete);
+  const loaded = (img) =>
+    new Promise((done) => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+  await Promise.race([Promise.all(loading().map(loaded)), new Promise((done) => setTimeout(done, 5000))]);
+  return loading().map((img) => img.currentSrc || img.src);
+}
 
 /** Runs in the page: what is cut by the screen edge, sticks out of its box, or has text wider than its box. */
 function inspectWidths(rootSelector) {
@@ -57,13 +143,29 @@ function inspectWidths(rootSelector) {
     for (let parent = element.parentElement; parent; parent = parent.parentElement) if (set.has(parent)) return true;
     return false;
   };
-  const describe = (element) => {
-    const text = (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  // Without text, the accessible name tells two images or icon buttons of one section apart. The name
+  // without it (withLabel false) is how the older known files spelled the same element.
+  const describe = (element, withLabel = true) => {
+    const label = ['aria-label', 'alt', 'title'].map((name) => element.getAttribute(name)?.trim()).find(Boolean);
+    const text = ((element.textContent ?? '').trim().replace(/\s+/g, ' ') || (withLabel && label) || '').slice(0, 40);
     const section = element.closest('[data-section]')?.getAttribute('data-section');
     return `${section ? `[${section}] ` : ''}${element.tagName.toLowerCase()}${text ? ` «${text}»` : ''}`;
   };
+  // What cannot be seen is skipped: hidden by visibility or opacity, and screen-reader-only boxes of 1×1 px.
+  const invisible = (element) => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 1 && rect.height <= 1) return true;
+    return element.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) === false;
+  };
   const findings = [];
-  const elements = [...root.querySelectorAll('*')].filter((element) => !element.closest('[aria-hidden="true"]'));
+  const unseen = new Set();
+  const elements = [...root.querySelectorAll('*')].filter((element) => {
+    if (element.closest('[aria-hidden="true"]') || inside(unseen, element) || invisible(element)) {
+      unseen.add(element);
+      return false;
+    }
+    return true;
+  });
 
   // Only the outermost offender of each kind is reported: its children stick out with it.
   const offScreen = new Set();
@@ -81,7 +183,9 @@ function inspectWidths(rootSelector) {
     const over = Math.max(right - edge.right, edge.left - left);
     if (over <= 1 || right <= left) continue;
     offScreen.add(element);
-    if (!inside(offScreen, element)) findings.push({ kind: 'off-screen', what: describe(element), px: over });
+    if (!inside(offScreen, element)) {
+      findings.push({ kind: 'off-screen', what: describe(element), alias: describe(element, false), px: over });
+    }
   }
 
   const bursting = new Set();
@@ -97,14 +201,18 @@ function inspectWidths(rootSelector) {
     if (parentStyle.overflowX !== 'visible') continue;
     const box = parent.getBoundingClientRect();
     // Flow content is measured against the parent's content box, positioned content against its border box.
+    // A negative margin is an intended bleed (a full-width scroller inside a padded column): it is allowed.
     const inset = (side) =>
-      style.position === 'absolute'
+      (style.position === 'absolute'
         ? 0
-        : parseFloat(parentStyle[`padding${side}`]) + parseFloat(parentStyle[`border${side}Width`]);
+        : parseFloat(parentStyle[`padding${side}`]) + parseFloat(parentStyle[`border${side}Width`])) -
+      Math.max(0, -parseFloat(style[`margin${side}`]) || 0);
     const over = Math.max(rect.right - (box.right - inset('Right')), box.left + inset('Left') - rect.left);
     if (over <= 1) continue;
     bursting.add(element);
-    if (!inside(bursting, element)) findings.push({ kind: 'wider than its box', what: describe(element), px: over });
+    if (!inside(bursting, element)) {
+      findings.push({ kind: 'wider than its box', what: describe(element), alias: describe(element, false), px: over });
+    }
   }
 
   for (const element of elements) {
@@ -117,7 +225,7 @@ function inspectWidths(rootSelector) {
     const extra = element.scrollWidth - element.clientWidth;
     if (extra > 1) {
       const kind = style.textOverflow === 'ellipsis' ? 'text cut by an ellipsis' : 'text overflow';
-      findings.push({ kind, what: describe(element), px: extra });
+      findings.push({ kind, what: describe(element), alias: describe(element, false), px: extra });
     }
   }
   return findings;
@@ -134,8 +242,11 @@ function inspectCovered() {
   }
   window.scrollTo(0, document.documentElement.scrollHeight);
   const height = window.innerHeight;
-  const describe = (element) => {
-    const text = (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  // Without text, the accessible name tells two images or icon buttons of one section apart. The name
+  // without it (withLabel false) is how the older known files spelled the same element.
+  const describe = (element, withLabel = true) => {
+    const label = ['aria-label', 'alt', 'title'].map((name) => element.getAttribute(name)?.trim()).find(Boolean);
+    const text = ((element.textContent ?? '').trim().replace(/\s+/g, ' ') || (withLabel && label) || '').slice(0, 40);
     const section = element.closest('[data-section]')?.getAttribute('data-section');
     return `${section ? `[${section}] ` : ''}${element.tagName.toLowerCase()}${text ? ` «${text}»` : ''}`;
   };
@@ -175,7 +286,12 @@ function inspectCovered() {
       // Only when the pinned element really is on top at that spot.
       const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
       if (!hit || !pin.contains(hit)) continue;
-      findings.push({ kind: 'covered', what: `${describe(target)} under ${describe(pin)}`, px: bottom - top });
+      findings.push({
+        kind: 'covered',
+        what: `${describe(target)} under ${describe(pin)}`,
+        alias: `${describe(target, false)} under ${describe(pin, false)}`,
+        px: bottom - top,
+      });
       break;
     }
   }
@@ -183,6 +299,7 @@ function inspectCovered() {
 }
 
 const keyOf = (finding) => `${finding.kind}: ${finding.what}`;
+const aliasOf = (finding) => `${finding.kind}: ${finding.alias ?? finding.what}`;
 
 if (!skipBuild && config.build && !config.baseUrl) execSync(config.build, { stdio: 'inherit' });
 rmSync(OUT_DIR, { recursive: true, force: true });
@@ -219,26 +336,22 @@ try {
       page.on('pageerror', (error) => errors.push(error.message));
       await page.goto(url.href, { waitUntil: 'networkidle' });
       await page.addStyleTag({ url: captureUrl });
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-        await Promise.all(
-          [...document.images].map((img) =>
-            img.complete ? null : new Promise((done) => (img.onload = img.onerror = done)),
-          ),
-        );
-      });
+      const pending = await page.evaluate(waitForAssets);
+      if (pending.length) {
+        console.warn(`${id} (${deviceKeys.get(device)}): images still loading after 5 s: ${pending.join(', ')}`);
+      }
       const widths = await page.evaluate(inspectWidths, config.screenRoot);
       const png = await page.screenshot({ fullPage });
       const covered = await page.evaluate(inspectCovered);
       await context.close();
 
       shots.push({ device, png: png.toString('base64') });
-      const findings = [...widths, ...covered].map((finding) => ({
-        ...finding,
-        px: Math.round(finding.px),
-        known: (known[id] ?? []).includes(keyOf(finding)),
-      }));
-      devices.push({ device: `${device.name} ${device.width}×${device.height}`, findings, errors });
+      const findings = [...widths, ...covered].map((finding) => {
+        const measured = { ...finding, px: Math.round(finding.px) };
+        return { ...measured, ...acceptance(id, device, measured) };
+      });
+      const name = deviceKeys.get(device);
+      devices.push({ name, device: `${device.name ?? 'Device'} ${device.width}×${device.height}`, findings, errors });
     }
 
     // One strip per screen: every size at the same scale, labelled.
@@ -287,11 +400,18 @@ for (const { id, devices } of report) {
   if (fresh.length === 0) lines.push('No new findings.');
   for (const d of fresh) {
     lines.push(`- **${d.device}**`);
-    for (const f of d.findings.filter((f) => !f.known)) lines.push(`  - ${keyOf(f)} — ${f.px} px`);
+    for (const f of d.findings.filter((f) => !f.known)) {
+      lines.push(`  - ${keyOf(f)} — ${f.px} px${f.note ? ` (${f.note})` : ''}`);
+    }
     for (const e of d.errors) lines.push(`  - console error: ${e}`);
   }
   const accepted = [...new Set(devices.flatMap((d) => d.findings.filter((f) => f.known).map(keyOf)))];
   if (accepted.length) lines.push('', `Known: ${accepted.map((k) => `\`${k}\``).join('; ')}`);
+  const seen = new Set(devices.flatMap((d) => d.findings.flatMap((f) => [keyOf(f), aliasOf(f)])));
+  const gone = (known[id] ?? []).filter((entry) => !seen.has(entry.finding)).map((entry) => entry.finding);
+  if (gone.length) {
+    lines.push('', `Known but not found any more (drop with --update-known): ${gone.map((k) => `\`${k}\``).join('; ')}`);
+  }
   lines.push('');
 }
 writeFileSync(join(OUT_DIR, 'report.md'), lines.join('\n'));
@@ -299,10 +419,22 @@ writeFileSync(join(OUT_DIR, 'results.json'), JSON.stringify(report, null, 2));
 console.log(`\nReport: ${join(OUT_DIR, 'report.md')}`);
 
 if (updateKnown) {
-  const next = { ...known };
+  // Screens that were not audited keep their entries as written.
+  const next = { ...knownFile };
   for (const { id, devices } of report) {
-    const keys = [...new Set(devices.flatMap((d) => d.findings.map(keyOf)))].sort();
-    if (keys.length) next[id] = keys;
+    const entries = new Map();
+    for (const d of devices) {
+      for (const f of d.findings) {
+        const entry = entries.get(keyOf(f)) ?? { finding: keyOf(f), maxPx: {} };
+        entry.maxPx[d.name] = Math.max(entry.maxPx[d.name] ?? 0, f.px + KNOWN_SLACK);
+        entries.set(entry.finding, entry);
+      }
+    }
+    const reasons = new Map((known[id] ?? []).filter((entry) => entry.reason).map((e) => [e.finding, e.reason]));
+    const list = [...entries.values()]
+      .sort((a, b) => a.finding.localeCompare(b.finding))
+      .map((entry) => (reasons.has(entry.finding) ? { ...entry, reason: reasons.get(entry.finding) } : entry));
+    if (list.length) next[id] = list;
     else delete next[id];
   }
   writeFileSync(KNOWN_FILE, `${JSON.stringify(next, null, 2)}\n`);
@@ -316,7 +448,11 @@ if (broken.length > 0) {
 }
 if (fail && !updateKnown) {
   const fresh = report.flatMap(({ id, devices }) =>
-    devices.flatMap((d) => d.findings.filter((f) => !f.known).map((f) => `${id} (${d.device}): ${keyOf(f)}`)),
+    devices.flatMap((d) =>
+      d.findings
+        .filter((f) => !f.known)
+        .map((f) => `${id} (${d.device}): ${keyOf(f)} — ${f.px} px${f.note ? ` (${f.note})` : ''}`),
+    ),
   );
   if (fresh.length > 0) {
     console.error(`\nNew findings:\n  ${fresh.join('\n  ')}`);

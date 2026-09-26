@@ -12,19 +12,22 @@ horizontal sections (`nav`, `hero`, `list`…), and **every section is compared 
 report shows which section is off, whether its position, its height or its pixels differ, and by how much.
 
 ```
-| # | Section  | Figma top/h | DOM top/h | Mismatch |
-| 0 | nav      | 0/56        | 0/56      | 0.00%    |
-| 1 | hero     | 56/180      | 56/172    | 0.00%    |  ← 8 px shorter: the geometry says so, not the pixels
-| 2 | stats    | 236/88      | 228/88    | 2.16%    |  ← a real difference inside the section
-| 3 | settings | 324/168     | 316/168   | 0.00%    |  ← shifted by 8 px but identical, and reported as such
+| # | Section  | Figma top/h | DOM top/h | Δ top | Δ height | Mismatch |
+| 0 | nav      | 0/56        | 0/56      | 0     | 0        | 0.00%    |
+| 1 | hero     | 56/180      | 56/172    | 0     | -8 ←     | 0.00%    |  ← 8 px shorter: the geometry says so, not the pixels
+| 2 | stats    | 236/88      | 228/88    | 0     | 0        | 2.16%    |  ← a real difference inside the section
+| 3 | settings | 324/168     | 316/168   | 0     | 0        | 0.00%    |  ← shifted by 8 px but identical, and reported as such
 ```
+
+Geometry is blamed the same way: **Δ top** is a section's own displacement, so the sections that the
+shorter hero pulls up show 0, and in CI `--max-geometry=1` fails on the hero alone.
 
 The spacing audit then measures every section in both images:
 
 ```
 | Section | Left          | Right         | Top padding | Bottom padding  | Height           | Gaps in a row |
 | hero    | 137 / 137 (0) | 139 / 139 (0) | 16 / 16 (0) | 33 / 25 (-8) ←  | 180 / 172 (-8) ← | — → —         |
-| stats   | 25 / 24 (-1)  | 24 / 23 (-1)  | 0 / 0 (0)   | 24 / 24 (0)     | 88 / 88 (0)      | 16, 16 → 8, 8 |
+| stats   | 25 / 24 (-1)  | 24 / 23 (-1)  | 0 / 0 (0)   | 24 / 24 (0)     | 88 / 88 (0)      | 16, 16 → 8, 8 ← |
 ```
 
 And because the design is drawn at one width, a responsive audit opens every screen at six phone sizes
@@ -78,20 +81,21 @@ adds `figma-pixel.config.json` and walks through the preview route it needs.
 npm ci
 npx playwright install chromium
 npm run example
+npm test
 ```
 
 [`examples/basic`](examples/basic) is a static page with a CSP, a reference PNG and a sections file. The
 reference was rendered from a variant of the page with a taller header and wider gaps between the stat
 cards, so the report shows each kind of finding: a height change, a shifted but identical section, and a
-real pixel difference.
+real pixel difference. `npm test` runs the CI limits against a copy of it.
 
 ## Scripts
 
 | Script                           | What it does                                                                                   |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pixel-diff.mjs [ids] [--skip-build] [--max-section=N]` | builds, serves, captures and compares; writes `diff/report.md`, `results.json` and crops |
+| `pixel-diff.mjs [ids] [--skip-build] [--max-section=N] [--max-geometry=PX]` | builds, serves, captures and compares; writes `diff/report.md`, `results.json` and crops; the limits fail CI |
 | `spacing-audit.mjs`              | margins, paddings, heights and gaps of every section, reference versus build                     |
-| `responsive-audit.mjs [ids] [--fail] [--update-known]` | every screen at six phone sizes: a screenshot strip, and elements off-screen, wider than their box, overflowing text, content under pinned bars |
+| `responsive-audit.mjs [ids] [--fail] [--update-known]` | every screen at six phone sizes: a screenshot strip, and elements off-screen, wider than their box, overflowing text, content under pinned bars; accepted findings are pinned to their devices and sizes |
 | `figma-boxes.py <node> [--sections]` | boxes of a frame's nodes from saved `get_metadata` XML, or a sections-file skeleton           |
 | `serve-dist.mjs`                 | static server with an SPA fallback, used by `pixel-diff`                                         |
 
@@ -112,7 +116,9 @@ static states. Each of these is spelled out in the method reference.
 окрашивает всё, что ниже, а отчёт показывает, какая именно секция отличается: положением, высотой или
 пикселями. Аудит отступов меряет поля, отступы и зазоры каждой секции в эталоне и в сборке. Проверка размеров
 открывает каждый экран на шести телефонах от 360 до 440 px и ищет то, что вылезает за экран или за свой
-блок, текст, который не помещается, и контент под закреплённой панелью. Итог
+блок, текст, который не помещается, и контент под закреплённой панелью. В CI `--max-geometry=1` валит
+сборку, если у секции поехали top или высота (сдвиг от секции выше не считается), а принятые находки
+responsive-аудита привязаны к устройствам и допустимому размеру. Итог
 записывается в `PIXEL-SPEC.md` тремя разделами: «Исправлено», «Оставлено осознанно», «Не закрыто».
 Ничего, чего нет в макете, не придумывается.
 

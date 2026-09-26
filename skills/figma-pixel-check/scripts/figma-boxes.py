@@ -8,6 +8,7 @@ FILE defaults to design/figma/figma-metadata.xml. Child x/y in the XML are relat
 boxes printed here are summed up to the requested frame, which is what sections/<id>.json needs.
 """
 import json
+import math
 import re
 import signal
 import sys
@@ -57,6 +58,12 @@ def walk(n, ox, oy, d, depth):
             walk(c, x, y, d + 1, depth)
 
 
+def snap(start, size):
+    """Whole-pixel start and size of a box with fractional edges: each edge is rounded half up, as in Chromium."""
+    first = math.floor(start + 0.5)
+    return first, math.floor(start + size + 0.5) - first
+
+
 def slug(text, fallback):
     s = re.sub(r'[^\w]+', '-', text.strip().lower()).strip('-_')
     return s or fallback
@@ -71,16 +78,18 @@ def skeleton(frame):
     for i, (_, y, _, h, name) in enumerate(children):
         base = slug(name, f'section-{i}')
         names[base] = names.get(base, 0) + 1
+        top, height_px = snap(y, h)
         sections.append({
             'name': base if names[base] == 1 else f'{base}-{names[base]}',
-            'top': round(y),
-            'height': round(h),
+            'top': top,
+            'height': height_px,
         })
+    width_px = math.floor(width + 0.5)
     return {
         'node': frame.attrib.get('id'),
-        'reference': f"{slug(frame.attrib.get('name', ''), 'screen')}-{round(width)}.png",
-        'width': round(width),
-        'height': round(height),
+        'reference': f"{slug(frame.attrib.get('name', ''), 'screen')}-{width_px}.png",
+        'width': width_px,
+        'height': math.floor(height + 0.5),
         'sections': sections,
     }
 

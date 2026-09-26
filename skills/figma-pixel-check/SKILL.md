@@ -1,15 +1,18 @@
 ---
 name: figma-pixel-check
-description: Build a web screen from a Figma frame and prove it matches, section by section, with a pixel diff, a colour check, a check of Figma's own values (fonts, colours, radii, strokes, shadows, gap, padding) and a spacing audit against reference PNGs exported from Figma, then check it at other phone sizes. Use when implementing or fixing a screen or state from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or to check that a page "matches the design", to compare a built page with Figma, to add a screen to the pixel check, to check that screens hold on narrow and wide phones, or to set the check up in a web project (React, Vue, Svelte, plain HTML; mobile web, Capacitor, PWA).
+description: Build a web screen from a Figma frame and prove it matches, section by section (geometry, pixels, colours, Figma's own style values, spacing), then check it at other phone sizes. Use when implementing or fixing a screen from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or whether a page "matches the design", to add a screen to the check, to check narrow and wide phones, or to set the check up in a web project (React, Vue, Svelte, plain HTML, Capacitor, PWA).
 ---
 
 # Figma frame → layout → per-section pixel check
 
 The layout is never judged by eye. Each screen has a reference PNG exported from Figma at 1x and a list of
 its horizontal sections. The built page is captured in Chromium at the frame size, and **each section is
-compared from its own top**, so one section that is 8 px too tall does not turn everything below it red.
-A spacing audit then measures margins, paddings and gaps of every section in both images, and a responsive
-audit opens every screen at other phone sizes, where the design has no reference, to catch what breaks there.
+compared from its own top**, so one section that is 8 px too tall does not turn everything below it red:
+its position and height, its pixels and its flat colours. Figma's own values (fonts, colours, radii, strokes,
+shadows, gap, padding), exported once per screen, are compared with the computed styles, which catches what
+pixels cannot tell apart. A spacing audit measures margins, paddings and gaps of every section in both
+images, and a responsive audit opens every screen at other phone sizes, where the design has no reference,
+to catch what breaks there.
 
 Rules that hold throughout:
 

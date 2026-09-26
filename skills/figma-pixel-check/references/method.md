@@ -338,9 +338,10 @@ node scripts/figma-pixel/responsive-audit.mjs --skip-build --fail
 same whole pixels; `1` tolerates the pixel that sub-pixel rounding can cost (Figma at 12.5, the build at
 12.4), at the price of letting a real 1 px change through. `--max-color=<percent>` fails a section whose
 colour differs in more than that share of it: 0.5 matches the report's mark and a correct section shows
-0.00 %. `--max-section=<percent>` fails a section whose mismatch is larger. Choose it from the current `PIXEL-SPEC.md` numbers plus a margin: the
+0.00 %. `--max-style=<count>` fails a section with more values that differ from Figma (or Figma texts not
+found) than the limit; `0` holds every exported value. `--max-section=<percent>` fails a section whose mismatch is larger. Choose it from the current `PIXEL-SPEC.md` numbers plus a margin: the
 goal is catching regressions, not re-litigating the accepted differences. A section recorded under "Kept on
-purpose" gets its own `maxGeometry` / `maxMismatch` / `maxColor` in the sections file instead of a looser
+purpose" gets its own `maxGeometry` / `maxMismatch` / `maxColor` / `maxStyle` in the sections file instead of a looser
 global limit.
 A missing section fails both, and a malformed limit or an unknown flag is an error rather than a disabled
 check. Upload

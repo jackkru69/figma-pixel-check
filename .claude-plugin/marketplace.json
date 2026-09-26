@@ -1,6 +1,6 @@
 {
   "name": "figma-pixel-check",
-  "description": "Figma → web layout with a per-section pixel check",
+  "description": "Figma to web, checked: per-section geometry, pixel, colour and style checks plus a responsive audit",
   "owner": {
     "name": "jackkru69",
     "url": "https://github.com/jackkru69"
@@ -9,7 +9,7 @@
     {
       "name": "figma-pixel-check",
       "source": ".",
-      "description": "Build web screens from Figma frames and prove they match: per-section pixel diff and spacing audit against reference PNGs exported from Figma."
+      "description": "Visual QA for Figma to web: compares a built page with its Figma frame section by section (geometry, pixels, colours and Figma's own values: fonts, radii, strokes, shadows, gap, padding) and checks it at six phone sizes. Plain Node + Playwright, runs in CI."
     }
   ]
 }

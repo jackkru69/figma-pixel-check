@@ -1,7 +1,7 @@
 {
   "name": "figma-pixel-check",
   "private": true,
-  "description": "Dev dependencies for running the bundled example; the plugin itself needs none of them.",
+  "description": "Development of figma-pixel-check: the example, the tests, the Figma corpus and its benchmark. The scripts in skills/figma-pixel-check/scripts are what projects use.",
   "scripts": {
     "example": "cd examples/basic && node ../../skills/figma-pixel-check/scripts/pixel-diff.mjs && node ../../skills/figma-pixel-check/scripts/spacing-audit.mjs && node ../../skills/figma-pixel-check/scripts/responsive-audit.mjs --fail",
     "test": "node --test test/*.test.mjs",

@@ -1,6 +1,6 @@
 ---
 name: figma-pixel-check
-description: Build a web screen from a Figma frame and prove it matches, section by section, with a pixel diff and a spacing audit against reference PNGs exported from Figma, then check it at other phone sizes. Use when implementing or fixing a screen or state from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or to check that a page "matches the design", to compare a built page with Figma, to add a screen to the pixel check, to check that screens hold on narrow and wide phones, or to set the check up in a web project (React, Vue, Svelte, plain HTML; mobile web, Capacitor, PWA).
+description: Build a web screen from a Figma frame and prove it matches, section by section, with a pixel diff, a colour check and a spacing audit against reference PNGs exported from Figma, then check it at other phone sizes. Use when implementing or fixing a screen or state from a Figma URL or node id (like 123:4567), when asked for a pixel-perfect layout or to check that a page "matches the design", to compare a built page with Figma, to add a screen to the pixel check, to check that screens hold on narrow and wide phones, or to set the check up in a web project (React, Vue, Svelte, plain HTML; mobile web, Capacitor, PWA).
 ---
 
 # Figma frame → layout → per-section pixel check
@@ -29,8 +29,10 @@ Skip this if the project already has `figma-pixel.config.json`.
 1. Copy the scripts into the project, where CI can run them without Claude and Node resolves their
    dependencies from the project's `node_modules`:
    `mkdir -p scripts/figma-pixel && cp ${CLAUDE_SKILL_DIR}/scripts/* scripts/figma-pixel/`
-2. Install the dev dependencies with the project's package manager: `pixelmatch`, `pngjs`, `@playwright/test`,
+2. Install the dev dependencies with the project's package manager: `pixelmatch@7`, `pngjs@7`, `@playwright/test`,
    then `npx playwright install chromium` (skip when a Chromium for that Playwright version is present).
+   Keep pixelmatch on 7: the next major changes the colour metric, and every number in the method reference
+   was calibrated on 7.
 3. Add scripts to `package.json`: `"pixel:diff": "node scripts/figma-pixel/pixel-diff.mjs"` and
    `"spacing": "node scripts/figma-pixel/spacing-audit.mjs"`,
    `"responsive": "node scripts/figma-pixel/responsive-audit.mjs"`.
@@ -61,28 +63,38 @@ Skip this if the project already has `figma-pixel.config.json`.
    `python3 scripts/figma-pixel/figma-boxes.py <node-id> --sections`, then split and rename to bands you can
    mark in the markup: nav, header, card, form, list, footer, typically 3–8 per screen, whole lists as one band.
 5. **Layout.** Use the project's components and tokens (map Figma variables to existing tokens, do not
-   hard-code near-duplicates). Figma strokes on frames and shapes are usually inside: use an inset
-   `box-shadow`/ring, not `border`, which adds to the size. A status bar drawn in the frame is a safe-area
-   inset in the app; emulate it during capture with `captureCss`. Put `data-section="<name>"` on the element
-   of each band; names match the sections file.
+   hard-code near-duplicates). Take every typographic value from the saved code, never `line-height: normal`
+   for Figma's AUTO. Strokes, blurs, shadows and fonts translate as in
+   [the Figma-to-CSS table](references/method.md#from-figma-to-css): an INSIDE stroke in auto layout also
+   moves the content in by its width, `get_design_context` writes `border` for every alignment, and a blur
+   value in Figma is twice the CSS one. A status bar drawn in the frame is a safe-area inset in the app;
+   emulate it during capture with `captureCss`. Put `data-section="<name>"` on the element of each band;
+   names match the sections file.
 6. **Check.** `npm run pixel:diff -- <id>` (add `--skip-build` when the build is fresh), then
    `npm run spacing`. Read `design/figma/diff/report.md` and fix in this order:
-   1. sections missing in the DOM, then any section whose DOM top or height differs from Figma;
+   1. sections missing in the DOM, then any section with a non-zero **Δ top** or **Δ height** (the section
+      itself is off; sections that are only pushed by one above show Δ top 0);
    2. flagged values in `SPACING-AUDIT.md` (margins, paddings, gaps);
-   3. the worst percentages: open that section's `-diff.png` next to `-expected.png` and `-actual.png`.
+   3. a marked **Colour**: the pair says which colour the build has instead of Figma's (`#F2F4F7 → #F9FAFB`);
+   4. the worst percentages: open that section's `-diff.png` next to `-expected.png` and `-actual.png`.
 
-   Repeat until tops and heights match and the numbers stop falling. After a correct layout a screen
-   usually lands at 1–4 %, and text-heavy sections at up to ~7 %, from font rasterisation (see
-   [references/method.md](references/method.md#reading-the-numbers)). Do not distort the layout to chase that last part.
+   Repeat until tops and heights match, colours are 0.00 % and the numbers stop falling. After a correct
+   layout a screen usually lands at 0.2–2 %, and text-heavy sections at up to ~4 %, from font rasterisation
+   (see [references/method.md](references/method.md#reading-the-numbers)). Do not distort the layout to chase
+   that last part, and do not pick a font weight or size by the percentage: a wrong one can score lower.
 7. **Other sizes.** `npm run responsive -- <id> --skip-build` opens the screen at every size in `devices`
    (360 to 440 px wide by default). Look at the strip `design/figma/diff/responsive/<id>.png` and fix each
-   finding in `report.md`: an element cut by the screen edge, wider than its box, text that does not fit,
-   or content covered by a bottom-pinned bar at the end of scrolling. What the design itself draws that way
-   and cannot be seen goes into `design/figma/responsive-known.json` via `--update-known`, with the reason
-   in `PIXEL-SPEC.md`. Keep 375 px (the design width) unchanged: re-run pixel-diff after these fixes.
+   finding in `report.md`: a page that scrolls sideways, an element cut by the screen edge or clipped by an
+   ancestor, wider than its box, text that does not fit, or content covered by a pinned bar or floating
+   button at the end of scrolling. What the design itself draws that way
+   and cannot be seen goes into `design/figma/responsive-known.json` via `--update-known`, which pins each
+   finding to the devices and the size seen now; add its `reason` there and in `PIXEL-SPEC.md`. Never
+   accept a finding that is visible. Keep 375 px (the design width) unchanged: re-run pixel-diff after these fixes.
 8. **Record.** Update `PIXEL-SPEC.md`: the summary row with both numbers, then **Fixed**, **Kept on purpose**
    (with the reason) and **Open** (with what is needed and from whom). Mark the screen as done in the
    project's screen index if it has one.
 9. **Done** when the project's own checks and build pass, pixel-diff and the responsive audit report no console
    errors, CSP violations or new findings, and every remaining mismatch is explained in `PIXEL-SPEC.md`. In
-   CI, `pixel-diff.mjs --max-section=<percent>` and `responsive-audit.mjs --fail` fail the job on a regression.
+   CI, `pixel-diff.mjs --max-section=<percent> --max-geometry=1 --max-color=0.5` and
+   `responsive-audit.mjs --fail` fail the job on a regression; a difference kept on purpose gets its own
+   `maxGeometry` / `maxMismatch` / `maxColor` and `reason` on its section in the sections file.

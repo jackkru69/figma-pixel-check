@@ -21,6 +21,7 @@ jobs:
           python3 ../../skills/figma-pixel-check/scripts/figma-boxes.py 1:2 --sections --xml design/figma-metadata.xml > "$RUNNER_TEMP/skeleton.json"
           python3 -c "import json, sys; a, b = (json.load(open(f)) for f in sys.argv[1:]); assert a == b, (a, b)" "$RUNNER_TEMP/skeleton.json" design/sections/profile.json
       - run: npm run example
+      - run: npm test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -28,3 +29,4 @@ jobs:
           path: |
             examples/basic/design/diff/
             examples/basic/design/SPACING-AUDIT.md
+            corpus/**/design/diff/

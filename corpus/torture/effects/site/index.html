@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>effects</title>
+    <link rel="stylesheet" href="/fonts/inter.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="screen">
+      <section class="band" data-section="shadow-sm">
+        <div class="card card--sm"><p class="label">Shadow sm · 0 1 3 / 0 1 2</p></div>
+      </section>
+      <section class="band" data-section="shadow-lg">
+        <div class="card card--lg"><p class="label">Shadow lg · 0 12 16 −4 / 0 4 6 −2</p></div>
+      </section>
+      <section class="band" data-section="inner">
+        <div class="card card--inner"><p class="label">Inner shadow · 0 2 4</p></div>
+      </section>
+      <section class="band" data-section="blur">
+        <div class="blur-row" aria-hidden="true">
+          <span class="dot"></span>
+          <span class="dot dot--blur-8"></span>
+          <span class="dot dot--blur-16"></span>
+        </div>
+      </section>
+      <section class="band" data-section="glass">
+        <div class="stage">
+          <span class="blob" aria-hidden="true"></span>
+          <div class="glass-card" data-section="glass-card"><p class="label label--glass">Glass · background blur 12</p></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

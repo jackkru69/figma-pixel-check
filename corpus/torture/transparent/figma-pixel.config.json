@@ -1,0 +1,8 @@
+{
+  "dir": "design",
+  "build": null,
+  "dist": "../..",
+  "url": "/torture/{id}/site/index.html",
+  "// captureCss": "The frame has no fill: get_screenshot draws it on Figma canvas grey #E5E5E5, so the capture does too",
+  "captureCss": "html, body { background: #E5E5E5 !important; }"
+}

@@ -1,0 +1,28 @@
+{
+  "node": "2:124",
+  "reference": "radii-375.png",
+  "width": 375,
+  "height": 463,
+  "sections": [
+    {
+      "name": "radius-scale",
+      "top": 0,
+      "height": 88
+    },
+    {
+      "name": "sheet-top",
+      "top": 88,
+      "height": 95
+    },
+    {
+      "name": "smoothing",
+      "top": 183,
+      "height": 128
+    },
+    {
+      "name": "clip",
+      "top": 311,
+      "height": 152
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "half-band",
+    "css": ".band { padding-block: 16px !important; }",
+    "note": "The 14.25 px band padding replaced by the 16 px spacing token: the band grows from 48.5 to 52 px."
+  },
+  {
+    "kind": "gap",
+    "section": "half-grid",
+    "css": ".stats { gap: 8px !important; }",
+    "note": "Card gap 12 → 8 px: both cards grow to 163.5 px."
+  },
+  {
+    "kind": "margin",
+    "section": "odd-line-height",
+    "css": ".copy__text { margin-top: 4px !important; }",
+    "note": "A stray 4 px top margin on the paragraph (a p reset that was not applied)."
+  },
+  {
+    "kind": "font-size",
+    "section": "half-grid",
+    "css": ".stat__value { font-size: 21px !important; }",
+    "note": "Amounts at 21 px instead of 20 px; the 28 px line height keeps the card height."
+  },
+  {
+    "kind": "line-height",
+    "section": "odd-line-height",
+    "css": ".copy__text { line-height: 21px !important; }",
+    "note": "The odd 21.5 px line height rounded to 21 px: the paragraph is 42 px instead of 43 px."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "half-grid",
+    "css": ".stat__value { letter-spacing: -0.4px !important; }",
+    "note": "A -2 % display tracking token applied to the amounts, which Figma draws at 0."
+  },
+  {
+    "kind": "font-weight",
+    "section": "half-band",
+    "css": ".band__title { font-weight: 600 !important; }",
+    "note": "Band title in Semi Bold instead of Medium."
+  },
+  {
+    "kind": "text-color",
+    "section": "half-grid",
+    "css": ".stat__label { color: #475467 !important; }",
+    "note": "Card labels in gray-600 (#475467) instead of gray-500 (#667085)."
+  },
+  {
+    "kind": "fill-color",
+    "section": "half-box",
+    "css": ".swatch { background: #9e77ed !important; }",
+    "note": "Swatch in primary-500 (#9E77ED) instead of primary-600 (#7F56D9)."
+  },
+  {
+    "kind": "radius",
+    "section": "half-grid",
+    "css": ".stat { border-radius: 8px !important; }",
+    "note": "Card radius 12 → 8 px."
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "half-grid",
+    "css": ".stat { border: 0 !important; box-shadow: inset 0 0 0 1px #eaecf0 !important; }",
+    "note": "The card stroke as an inset ring: Figma includes this stroke in the layout, so the card drops from 80 to 78 px."
+  },
+  {
+    "kind": "icon-size",
+    "section": "icon-strokes",
+    "css": ".icon { width: 20px !important; height: 20px !important; }",
+    "note": "All icons at 20 px, the 24 px ones included."
+  },
+  {
+    "kind": "missing",
+    "section": "icon-strokes",
+    "css": ".icons .icon:last-child { display: none !important; }",
+    "note": "The 2 px stroke icon is dropped."
+  },
+  {
+    "kind": "shift",
+    "section": "half-box",
+    "css": ".half-box { padding-left: 22.5px !important; }",
+    "note": "Swatch 2 px to the right (x 22.5 instead of 20.5)."
+  }
+]

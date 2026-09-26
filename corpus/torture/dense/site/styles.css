@@ -1,0 +1,141 @@
+:root {
+  --color-text: #101828;
+  --color-text-secondary: #667085;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f9fafb;
+  --color-divider: #eaecf0;
+  --page-gutter: 20px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+/* Title: 20 / 20 / 12 padding, 2 px between the lines. */
+.statement__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px var(--page-gutter) 12px;
+}
+
+.statement__title h1 {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.statement__title p {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-secondary);
+}
+
+/* Table: fixed columns (date 64, amount 96 plus the page gutter), the description takes the rest. */
+.ops {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ops__col-date {
+  width: calc(var(--page-gutter) + 64px);
+}
+
+.ops__col-amount {
+  width: calc(96px + var(--page-gutter));
+}
+
+.ops th,
+.ops td {
+  padding: 0;
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* The divider sits inside the row box: Figma includes the stroke in the 36 / 32 px row. */
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.ops th:first-child,
+.ops td:first-child {
+  padding-left: var(--page-gutter);
+}
+
+.ops th:last-child,
+.ops td:last-child {
+  padding-right: var(--page-gutter);
+}
+
+.ops .ops__amount {
+  text-align: right;
+}
+
+.ops thead tr {
+  height: 32px;
+}
+
+.ops th {
+  background: var(--color-surface-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.ops tbody tr {
+  height: 36px;
+}
+
+.ops td {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ops td:first-child {
+  color: var(--color-text-secondary);
+}
+
+.ops td.ops__amount {
+  font-weight: 500;
+}
+
+/* Total: 12 px above, 20 px below, label and amount on one line. */
+.statement__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px var(--page-gutter) 20px;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.statement__total span {
+  font-weight: 500;
+}
+
+.statement__total strong {
+  font-weight: 700;
+}

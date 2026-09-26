@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "shadow",
+    "section": "shadow-lg",
+    "css": ".card--lg { box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.06), 0 1px 3px 0 rgba(16, 24, 40, 0.1) !important; }",
+    "note": "the shadow-sm token applied to the lg card: the 16 px soft drop under the card is gone"
+  },
+  {
+    "kind": "shadow",
+    "section": "blur",
+    "css": ".dot--blur-8 { filter: blur(8px) !important; } .dot--blur-16 { filter: blur(16px) !important; }",
+    "note": "layer blur written with Figma's panel value (8 / 16) as the CSS sigma: twice as soft as the design (Figma blur = 2 sigma)"
+  },
+  {
+    "kind": "missing",
+    "section": "glass",
+    "css": ".glass-card { backdrop-filter: none !important; }",
+    "note": "background blur 12 dropped: the yellow blob shows through the glass card with a hard edge"
+  },
+  {
+    "kind": "gap",
+    "section": "blur",
+    "css": ".blur-row { gap: 20px !important; }",
+    "note": "gap between the circles 24 -> 20: the 2nd and 3rd circles move 4 and 8 px left"
+  },
+  {
+    "kind": "radius",
+    "section": "glass",
+    "css": ".stage { border-radius: 12px !important; }",
+    "note": "gradient stage radius 16 -> 12 (the card radius token reused)"
+  },
+  {
+    "kind": "fill-color",
+    "section": "glass",
+    "css": ".stage { background: linear-gradient(to right, #7f56d9, #dd2590) !important; }",
+    "note": "gradient end pink-500 #EE46BC -> neighbouring token pink-600 #DD2590"
+  },
+  {
+    "kind": "text-color",
+    "section": "shadow-sm",
+    "css": ".card--sm .label { color: #344054 !important; }",
+    "note": "label gray-900 #101828 -> gray-700 #344054"
+  },
+  {
+    "kind": "font-size",
+    "section": "shadow-lg",
+    "css": ".card--lg .label { font-size: 14px !important; }",
+    "note": "label 15 -> 14 px"
+  },
+  {
+    "kind": "font-weight",
+    "section": "glass",
+    "css": ".label--glass { font-weight: 500 !important; }",
+    "note": "glass label Semi Bold 600 -> Medium 500 (the weight of the other labels)"
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "inner",
+    "css": ".card--inner .label { letter-spacing: -0.2px !important; }",
+    "note": "a tight tracking token applied to a 0-tracking label: the line is about 4 px shorter"
+  },
+  {
+    "kind": "height",
+    "section": "glass-card",
+    "css": ".glass-card { height: 68px !important; }",
+    "note": "glass card 72 -> 68 px; the stage keeps its fixed 140 px, so nothing below moves"
+  },
+  {
+    "kind": "margin",
+    "section": "shadow-sm",
+    "css": ".card--sm { padding-left: 24px !important; }",
+    "note": "card inner padding 20 -> 24 on the left: the label moves 4 px right"
+  },
+  {
+    "kind": "icon-size",
+    "section": "blur",
+    "css": ".dot { width: 60px !important; height: 60px !important; }",
+    "note": "circles 64 -> 60 px; the row and the band get 4 px shorter"
+  },
+  {
+    "kind": "opacity",
+    "section": "glass-card",
+    "css": ".glass-card { background: rgba(255, 255, 255, 0.2) !important; }",
+    "note": "glass fill white 30 % -> 20 %: the card reads more saturated"
+  }
+]

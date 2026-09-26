@@ -1,0 +1,56 @@
+/* Type specimen (Figma t-type 2:18). Values from design/figma-code/type.tsx. */
+:root {
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #667085;
+  --band-pad-y: 12px;
+  --band-pad-x: 20px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  background: #fff;
+  font-family: Inter, sans-serif;
+  color: var(--text-primary);
+}
+
+/* Figma: vertical auto layout, every band hugs its text with 12 / 20 padding. */
+.type-scale {
+  display: flex;
+  flex-direction: column;
+}
+
+.band {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--band-pad-y) var(--band-pad-x);
+}
+
+/* Figma's text layers are auto-width (whitespace-nowrap) inside clipping frames (overflow-clip). On the web
+   the lines may wrap on a narrow screen instead of being cut, so neither is copied. */
+.t {
+  max-width: 100%;
+}
+
+.display { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: 0.4px; }
+.title { font-size: 28px; line-height: 34px; font-weight: 600; }
+.headline { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.26px; }
+.body { font-size: 17px; line-height: 22px; font-weight: 400; letter-spacing: -0.43px; }
+.callout { font-size: 16px; line-height: 21px; font-weight: 500; letter-spacing: -0.31px; }
+.subhead { font-size: 15px; line-height: 20px; font-weight: 400; letter-spacing: -0.23px; color: var(--text-secondary); }
+.footnote { font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: -0.08px; color: var(--text-tertiary); }
+.caption { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0.4px; color: var(--text-tertiary); }
+/* 6 % of 11 px = 0.66 px */
+.overline { font-size: 11px; line-height: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+/* Figma AUTO line height for Inter at 17 px is a 21 px box; line-height: normal gives 20 px in Chromium. */
+.auto-lh { font-size: 17px; line-height: 21px; font-weight: 500; }
+.percent-lh { font-size: 15px; line-height: 1.5; font-weight: 400; }
+/* −2 % of 24 px = −0.48 px */
+.tight { font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -0.02em; }

@@ -1,0 +1,178 @@
+/* t-radii (Figma 2:124). Values from design/figma-code/radii.tsx and the mask SVG. */
+:root {
+  --white: #fff;
+  --gray-300: #d0d5dd;
+  --gray-500: #667085;
+  --gray-900: #101828;
+  --brand-50: #f4ebff;
+  --brand-200: #d6bbfb;
+  --brand-700: #6941c6;
+  --brand-800: #53389e;
+  --brand-400: #9e77ed;
+  --warning-100: #fef0c7;
+  --warning-500: #f79009;
+  --warning-600: #dc6803;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+h2 {
+  margin: 0;
+}
+
+body {
+  background: var(--white);
+  color: var(--gray-900);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* radius-scale: 4 / 8 / 16 / 28 and a pill */
+.scale {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.swatch {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  background: var(--brand-200);
+}
+
+.swatch--4 {
+  border-radius: 4px;
+}
+
+.swatch--8 {
+  border-radius: 8px;
+}
+
+.swatch--16 {
+  border-radius: 16px;
+}
+
+.swatch--28 {
+  border-radius: 28px;
+}
+
+.pill {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-50);
+  color: var(--brand-700);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+/* sheet-top: a bottom sheet with top-only radius over the grey scrim */
+.sheet-top {
+  padding-top: 24px;
+  background: var(--gray-500);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px 20px;
+  border-radius: 24px 24px 0 0;
+  background: var(--white);
+}
+
+.sheet__handle {
+  flex: none;
+  width: 36px;
+  height: 5px;
+  border-radius: 2.5px;
+  background: var(--gray-300);
+}
+
+.sheet__title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* smoothing: radius 24 without and with 60 % corner smoothing */
+.smoothing {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px;
+}
+
+.tile {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  background: var(--gray-900);
+}
+
+/* Figma corner smoothing 60 % (iOS squircle). CSS border-radius has no smoothing and corner-shape's
+   superellipse is a different curve, so the fixed 96 px tile is clipped to the figma-squircle path
+   (width 96, height 96, radius 24, smoothing 0.6). */
+.tile--smooth {
+  border-radius: 0;
+  clip-path: path(
+    'M 57.6 0 c 13.441 0 20.162 0 25.296 2.616 a 24 24 0 0 1 10.488 10.488 c 2.616 5.134 2.616 11.855 2.616 25.296 L 96 57.6 c 0 13.441 0 20.162 -2.616 25.296 a 24 24 0 0 1 -10.488 10.488 c -5.134 2.616 -11.855 2.616 -25.296 2.616 L 38.4 96 c -13.441 0 -20.162 0 -25.296 -2.616 a 24 24 0 0 1 -10.488 -10.488 c -2.616 -5.134 -2.616 -11.855 -2.616 -25.296 L 0 38.4 c 0 -13.441 0 -20.162 2.616 -25.296 a 24 24 0 0 1 10.488 -10.488 c 5.134 -2.616 11.855 -2.616 25.296 -2.616 Z'
+  );
+}
+
+/* clip: a rounded frame that clips shapes overflowing it */
+.clip {
+  padding: 16px 20px;
+}
+
+.mask {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--warning-100);
+}
+
+.mask > span {
+  position: absolute;
+}
+
+.mask__disc {
+  top: 20px;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: var(--warning-500);
+}
+
+.mask__bar {
+  top: -10px;
+  right: -85px;
+  width: 200px;
+  height: 40px;
+  background: var(--warning-600);
+}
+
+/* 48 px disc with a 2 px outside stroke: the ring does not add to the size. */
+.mask__dot {
+  top: 60px;
+  left: 150px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--brand-800), var(--brand-400));
+  box-shadow: 0 0 0 2px var(--white);
+}

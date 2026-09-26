@@ -1,0 +1,38 @@
+{
+  "node": "2:55",
+  "reference": "effects-375.png",
+  "width": 375,
+  "height": 660,
+  "sections": [
+    {
+      "name": "shadow-sm",
+      "top": 0,
+      "height": 120
+    },
+    {
+      "name": "shadow-lg",
+      "top": 120,
+      "height": 120
+    },
+    {
+      "name": "inner",
+      "top": 240,
+      "height": 120
+    },
+    {
+      "name": "blur",
+      "top": 360,
+      "height": 112
+    },
+    {
+      "name": "glass",
+      "top": 472,
+      "height": 188
+    },
+    {
+      "name": "glass-card",
+      "top": 530,
+      "height": 72
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "node": "2:98",
+  "reference": "fractional-375.png",
+  "width": 375,
+  "height": 401,
+  "sections": [
+    {
+      "name": "half-band",
+      "top": 0,
+      "height": 49
+    },
+    {
+      "name": "half-box",
+      "top": 49,
+      "height": 61
+    },
+    {
+      "name": "hairline",
+      "top": 110,
+      "height": 56
+    },
+    {
+      "name": "odd-line-height",
+      "top": 166,
+      "height": 67,
+      "maxMismatch": 10,
+      "reason": "Chromium on Linux (headless, full hinting) rounds every glyph advance to a whole pixel: the second line sets 6 px wider than in Figma (ink 293 vs 287 px); geometry is exact"
+    },
+    {
+      "name": "icon-strokes",
+      "top": 233,
+      "height": 56
+    },
+    {
+      "name": "half-grid",
+      "top": 289,
+      "height": 112
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+/* Tokens from the Figma code (design/figma-code/icons.tsx). */
+:root {
+  --color-white: #ffffff;
+  --color-gray-300: #d0d5dd;
+  --color-gray-900: #101828;
+  --color-primary-50: #f4ebff;
+
+  --icon-size: 24px;
+  --row-gap: 24px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-white);
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One row of icons: 20 px side padding, 16 px top and bottom, icons centred on a line.
+   Figma's code has overflow-clip on every row; it is left out on purpose: a row that does not fit a
+   narrow phone must show (and be reported by the responsive audit), not be cut silently. */
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: var(--row-gap);
+  padding: 16px 20px;
+}
+
+.icon-row--16 {
+  --icon-size: 16px;
+}
+.icon-row--20 {
+  --icon-size: 20px;
+}
+.icon-row--24 {
+  --icon-size: 24px;
+}
+.icon-row--32 {
+  --icon-size: 32px;
+  --row-gap: 20px;
+}
+.icon-row--buttons {
+  --icon-size: 20px;
+  --row-gap: 16px;
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+/* 40 px round icon button with a 20 px glyph. */
+.icon-button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  cursor: pointer;
+}
+
+.icon-button--soft {
+  background: var(--color-primary-50);
+}
+
+/* Figma's stroke is inside: an inset ring keeps the button at 40 px. */
+.icon-button--outline {
+  background: var(--color-white);
+  box-shadow: inset 0 0 0 1px var(--color-gray-300);
+}
+
+.icon-button--solid {
+  background: var(--color-gray-900);
+}

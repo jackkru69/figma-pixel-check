@@ -1,0 +1,41 @@
+{
+  "sections": {
+    "half-band": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.05,
+      "color": 0
+    },
+    "half-box": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "hairline": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 1.79,
+      "color": 0
+    },
+    "odd-line-height": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 1.79,
+      "color": 0
+    },
+    "icon-strokes": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "half-grid": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.03,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

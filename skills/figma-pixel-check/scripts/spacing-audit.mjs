@@ -1,4 +1,4 @@
-// Spacing audit on top of the pixel-diff artifacts (run pixel-diff.mjs first).
+// Spacing audit on top of the pixel-diff artifacts (run pixel-diff.mjs first). Writes SPACING-AUDIT.md and diff/spacing.json.
 // For every section crop it measures the side margins, the inner top/bottom padding, the height and the gaps
 // between items in a row, for the Figma reference and for the build, and flags differences ≥ spacingFlag px.
 // The section background is the most frequent colour along the left and right edge columns.
@@ -17,6 +17,17 @@ const resultsFile = join(DIFF_DIR, 'results.json');
 if (!existsSync(resultsFile)) throw new Error(`No ${resultsFile}: run pixel-diff.mjs first.`);
 const results = JSON.parse(readFileSync(resultsFile, 'utf8'));
 const fileName = (name) => name.replace(/[^\p{L}\p{N}_-]+/gu, '-');
+
+/** Composites semi-transparent pixels onto white, as pixel-diff compares them; opaque images are unchanged. */
+function flatten(png) {
+  for (let i = 0; i < png.data.length; i += 4) {
+    const alpha = png.data[i + 3] / 255;
+    if (alpha === 1) continue;
+    for (let c = 0; c < 3; c++) png.data[i + c] = Math.round(png.data[i + c] * alpha + 255 * (1 - alpha));
+    png.data[i + 3] = 255;
+  }
+  return png;
+}
 
 function background(png) {
   const counts = new Map();
@@ -69,6 +80,34 @@ function measure(png) {
   return { left, right: png.width - 1 - right, top, bottom: png.height - 1 - bottom, gaps };
 }
 
+// Gaps are compared pairwise when both images have as many. When the counts differ, each gap is paired with
+// one of about the same size on the other side, and a gap of BIG_GAP px or more left without a pair is flagged
+// (an item missing from a row). Smaller ones are not: a word space, up to about 11 px at 34 px, can count as a
+// gap in one rasterisation and not in the other.
+const BIG_GAP = 12;
+/** Gaps of either side left without a partner: pairs within FLAG px are made closest first, each gap once. */
+function unpaired(expected, actual) {
+  const pairs = expected
+    .flatMap((a, i) => actual.map((b, j) => [Math.abs(a - b), i, j]))
+    .filter(([distance]) => distance < FLAG)
+    .sort((p, q) => p[0] - q[0]);
+  const usedExpected = new Set();
+  const usedActual = new Set();
+  for (const [, i, j] of pairs) {
+    if (usedExpected.has(i) || usedActual.has(j)) continue;
+    usedExpected.add(i);
+    usedActual.add(j);
+  }
+  return [...expected.filter((_, i) => !usedExpected.has(i)), ...actual.filter((_, j) => !usedActual.has(j))];
+}
+const gapCell = (expected, actual) => {
+  const flag =
+    expected.length === actual.length
+      ? expected.some((gap, i) => Math.abs(actual[i] - gap) >= FLAG)
+      : unpaired(expected, actual).some((gap) => gap >= BIG_GAP);
+  return `${expected.join(', ') || '—'} → ${actual.join(', ') || '—'}${flag ? ' ←' : ''}`;
+};
+
 const cell = (expected, actual) => {
   const delta = actual - expected;
   const sign = delta > 0 ? '+' : '';
@@ -83,18 +122,22 @@ const lines = [
   '',
 ];
 let flagged = 0;
+// The same measurements for tooling: {screen, section, left, right, top, bottom, height, gaps}, each value
+// as {expected, actual, delta, flagged}; gaps as {expected: [...], actual: [...], flagged}.
+const rows = [];
+const value = (expected, actual) => ({ expected, actual, delta: actual - expected, flagged: Math.abs(actual - expected) >= FLAG });
 for (const screen of results) {
   lines.push(`## ${screen.id}${screen.node ? ` (${screen.node})` : ''}`, '');
   lines.push('| Section | Left | Right | Top padding | Bottom padding | Height | Gaps in a row (reference → build) |');
   lines.push('| --- | --- | --- | --- | --- | --- | --- |');
   screen.sections.forEach((section, index) => {
-    if (section.missing) {
-      lines.push(`| ${section.name} | — | — | — | — | — | missing in DOM |`);
+    if (section.missing || section.empty) {
+      lines.push(`| ${section.name} | — | — | — | — | — | ${section.missing ? 'missing' : 'empty'} in DOM |`);
       return;
     }
     const base = join(DIFF_DIR, `${screen.id}-${screen.width}-${index}-${fileName(section.name)}`);
-    const expected = measure(PNG.sync.read(readFileSync(`${base}-expected.png`)));
-    const actual = measure(PNG.sync.read(readFileSync(`${base}-actual.png`)));
+    const expected = measure(flatten(PNG.sync.read(readFileSync(`${base}-expected.png`))));
+    const actual = measure(flatten(PNG.sync.read(readFileSync(`${base}-actual.png`))));
     if (!expected || !actual) {
       lines.push(`| ${section.name} | — | — | — | — | — | empty section |`);
       return;
@@ -105,12 +148,23 @@ for (const screen of results) {
       cell(expected.top, actual.top),
       cell(expected.bottom, actual.bottom),
       cell(section.figma.height, section.dom.height),
+      gapCell(expected.gaps, actual.gaps),
     ];
-    flagged += row.filter((value) => value.endsWith('←')).length;
-    const gaps = `${expected.gaps.join(', ') || '—'} → ${actual.gaps.join(', ') || '—'}`;
-    lines.push(`| ${section.name} | ${row.join(' | ')} | ${gaps} |`);
+    flagged += row.filter((cellText) => cellText.endsWith('←')).length;
+    lines.push(`| ${section.name} | ${row.join(' | ')} |`);
+    rows.push({
+      screen: screen.id,
+      section: section.name,
+      left: value(expected.left, actual.left),
+      right: value(expected.right, actual.right),
+      top: value(expected.top, actual.top),
+      bottom: value(expected.bottom, actual.bottom),
+      height: value(section.figma.height, section.dom.height),
+      gaps: { expected: expected.gaps, actual: actual.gaps, flagged: row[5].endsWith('←') },
+    });
   });
   lines.push('');
 }
 writeFileSync(OUT, lines.join('\n'));
+writeFileSync(join(DIFF_DIR, 'spacing.json'), JSON.stringify(rows, null, 2));
 console.log(`Wrote ${OUT}: ${flagged} value(s) off by ≥ ${FLAG} px.`);

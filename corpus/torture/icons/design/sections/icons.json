@@ -1,0 +1,38 @@
+{
+  "node": "3:70",
+  "reference": "icons-375.png",
+  "width": 375,
+  "height": 348,
+  "sections": [
+    {
+      "name": "stroke-16",
+      "top": 0,
+      "height": 48
+    },
+    {
+      "name": "stroke-20",
+      "top": 48,
+      "height": 52
+    },
+    {
+      "name": "stroke-24",
+      "top": 100,
+      "height": 56
+    },
+    {
+      "name": "stroke-32",
+      "top": 156,
+      "height": 64
+    },
+    {
+      "name": "filled",
+      "top": 220,
+      "height": 56
+    },
+    {
+      "name": "icon-buttons",
+      "top": 276,
+      "height": 72
+    }
+  ]
+}

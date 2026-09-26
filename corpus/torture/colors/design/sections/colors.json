@@ -1,0 +1,38 @@
+{
+  "node": "2:75",
+  "reference": "colors-375.png",
+  "width": 375,
+  "height": 604,
+  "sections": [
+    {
+      "name": "grays",
+      "top": 0,
+      "height": 80
+    },
+    {
+      "name": "near",
+      "top": 80,
+      "height": 96
+    },
+    {
+      "name": "text-colors",
+      "top": 176,
+      "height": 124
+    },
+    {
+      "name": "gradient-linear",
+      "top": 300,
+      "height": 112
+    },
+    {
+      "name": "gradient-radial",
+      "top": 412,
+      "height": 112
+    },
+    {
+      "name": "brand",
+      "top": 524,
+      "height": 80
+    }
+  ]
+}

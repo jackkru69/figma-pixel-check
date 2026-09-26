@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Wallet</title>
+    <link rel="stylesheet" href="/fonts/inter.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="nav" data-section="nav">
+        <button class="icon-button" type="button" aria-label="Back">
+          <img src="assets/back.svg" alt="" width="24" height="24" />
+        </button>
+        <h1 class="nav__title">Wallet</h1>
+        <button class="icon-button" type="button" aria-label="More">
+          <img src="assets/more.svg" alt="" width="24" height="24" />
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="balance" data-section="balance" aria-label="Balance">
+        <p class="balance__label">Total balance</p>
+        <p class="balance__amount">$12,480.20</p>
+        <p class="balance__card">•••• 4821</p>
+      </section>
+
+      <section class="recent" data-section="recent" aria-labelledby="recent-title">
+        <h2 class="recent__title" id="recent-title">Recent</h2>
+        <ul class="tx-list">
+          <li class="tx">
+            <span class="tx__avatar" aria-hidden="true"></span>
+            <div class="tx__body">
+              <p class="tx__name">Coffee Lab</p>
+              <p class="tx__date">Today, 9:12</p>
+            </div>
+            <p class="tx__amount">−$4.80</p>
+          </li>
+          <li class="tx">
+            <span class="tx__avatar" aria-hidden="true"></span>
+            <div class="tx__body">
+              <p class="tx__name">Salary</p>
+              <p class="tx__date">Yesterday</p>
+            </div>
+            <p class="tx__amount tx__amount--in">+$3,200.00</p>
+          </li>
+          <li class="tx">
+            <span class="tx__avatar" aria-hidden="true"></span>
+            <div class="tx__body">
+              <p class="tx__name">Metro card</p>
+              <p class="tx__date">Mon, 18:40</p>
+            </div>
+            <p class="tx__amount">−$25.00</p>
+          </li>
+          <li class="tx">
+            <span class="tx__avatar" aria-hidden="true"></span>
+            <div class="tx__body">
+              <p class="tx__name">Bookstore</p>
+              <p class="tx__date">Sun, 13:05</p>
+            </div>
+            <p class="tx__amount">−$18.99</p>
+          </li>
+          <li class="tx">
+            <span class="tx__avatar" aria-hidden="true"></span>
+            <div class="tx__body">
+              <p class="tx__name">Refund</p>
+              <p class="tx__date">Sat, 10:22</p>
+            </div>
+            <p class="tx__amount tx__amount--in">+$12.50</p>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <button class="fab" type="button" data-section="fab" aria-label="New transaction">
+      <img src="assets/plus.svg" alt="" width="24" height="24" />
+    </button>
+
+    <nav class="tabbar" data-section="tabbar" aria-label="Main">
+      <a class="tab tab--active" href="#" aria-current="page">
+        <img src="assets/tab-home.svg" alt="" width="24" height="24" />
+        <span class="tab__label">Home</span>
+      </a>
+      <a class="tab" href="#">
+        <img src="assets/tab-cards.svg" alt="" width="24" height="24" />
+        <span class="tab__label">Cards</span>
+      </a>
+      <a class="tab" href="#">
+        <img src="assets/tab-stats.svg" alt="" width="24" height="24" />
+        <span class="tab__label">Stats</span>
+      </a>
+      <a class="tab" href="#">
+        <img src="assets/tab-profile.svg" alt="" width="24" height="24" />
+        <span class="tab__label">Profile</span>
+      </a>
+    </nav>
+  </body>
+</html>

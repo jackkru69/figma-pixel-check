@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "wrap",
+    "section": "tight-title",
+    "css": ".intro__subtitle { width: 305px; }",
+    "note": "Fixed width copied from Figma's w-[305px]: Chromium sets the line at 307 px (305.19 unhinted), 'minutes' wraps to a second line, the band grows by one line (20 px)."
+  },
+  {
+    "kind": "gap",
+    "section": "tight-title",
+    "css": ".intro { gap: 4px; }",
+    "note": "Title-to-subtitle gap 8 → 4 (spacing token one step down); band 4 px shorter."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "tight-title",
+    "css": ".intro__title { letter-spacing: 0.17px; }",
+    "note": "+1 % tracking on the 17 px title (a Figma letter-spacing value applied where the design has 0); the line is ~4.5 px longer, no wrap."
+  },
+  {
+    "kind": "text-color",
+    "section": "tight-title",
+    "css": ".intro__subtitle { color: #667085; }",
+    "note": "Subtitle gray-600 #475467 → gray-500 #667085 (neighbouring token)."
+  },
+  {
+    "kind": "shift",
+    "section": "tight-title",
+    "css": ".intro { padding-left: 22px; }",
+    "note": "Title and subtitle 2 px to the right (inline padding 20 → 22); band geometry unchanged."
+  },
+  {
+    "kind": "missing",
+    "section": "tight-title",
+    "css": ".intro__subtitle { display: none; }",
+    "note": "Subtitle not rendered (dropped in markup); band 28 px shorter."
+  },
+  {
+    "kind": "height",
+    "section": "button-label",
+    "css": ".button { height: 44px; }",
+    "note": "Button height 48 → 44 (the 44 px touch-target token instead of the design's 48); band 4 px shorter, label box overflows its 20 px content box but stays centred."
+  },
+  {
+    "kind": "fill-color",
+    "section": "button-label",
+    "css": ".button { background: #9e77ed; }",
+    "note": "Button fill brand-600 #7F56D9 → brand-500 #9E77ED (neighbouring token)."
+  },
+  {
+    "kind": "radius",
+    "section": "button-label",
+    "css": ".button { border-radius: 12px; }",
+    "note": "Button radius 8 → 12 (radius-lg vs radius-xl)."
+  },
+  {
+    "kind": "opacity",
+    "section": "button-label",
+    "css": ".button { opacity: 0.85; }",
+    "note": "Button rendered with the disabled-state opacity 0.85 in the enabled state."
+  },
+  {
+    "kind": "margin",
+    "section": "paragraph",
+    "css": ".paragraph { margin-top: 4px; }",
+    "note": "Stray 4 px top margin on the paragraph (a leftover p margin reset); band 4 px taller."
+  },
+  {
+    "kind": "line-height",
+    "section": "paragraph",
+    "css": ".paragraph { line-height: 20px; }",
+    "note": "Body line height 22 → 20 (the 15/20 subtitle style instead of 15/22); 4 lines, band 8 px shorter."
+  },
+  {
+    "kind": "font-size",
+    "section": "paragraph",
+    "css": ".paragraph { font-size: 14px; }",
+    "note": "Body 15 → 14 px; lines rewrap (text reflows to other break points), same line height."
+  },
+  {
+    "kind": "font-weight",
+    "section": "columns",
+    "css": ".columns { font-weight: 400; }",
+    "note": "Column labels Medium 500 → Regular 400; narrower glyphs, the long word breaks at a different letter."
+  }
+]

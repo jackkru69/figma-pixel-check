@@ -1,0 +1,504 @@
+<canvas id="0:1" name="Page 1" x="0" y="0" width="0" height="0">
+  <frame id="2:2" name="t-strokes" x="0" y="0" width="375" height="480">
+    <frame id="2:3" name="inside" x="0" y="0" width="375" height="96">
+      <frame id="2:4" name="card" x="20" y="16" width="335" height="64">
+        <text id="2:5" name="Inside stroke · 1 px" x="21" y="22" width="133" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:6" name="center" x="0" y="96" width="375" height="96">
+      <frame id="2:7" name="card" x="20" y="16" width="335" height="64">
+        <text id="2:8" name="Center stroke · 2 px" x="20" y="22" width="141" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:9" name="outside" x="0" y="192" width="375" height="96">
+      <frame id="2:10" name="card" x="20" y="16" width="335" height="64">
+        <text id="2:11" name="Outside stroke · 2 px" x="20" y="22" width="148" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:12" name="dashed" x="0" y="288" width="375" height="96">
+      <frame id="2:13" name="card" x="20" y="16" width="335" height="64">
+        <text id="2:14" name="Dashed · 1 px · 4/4" x="21" y="22" width="133" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:15" name="thick" x="0" y="384" width="375" height="96">
+      <frame id="2:16" name="card" x="20" y="16" width="335" height="64">
+        <text id="2:17" name="Inside · 2 px · radius 16" x="22" y="22" width="163" height="20" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="2:18" name="t-type" x="455" y="0" width="375" height="575">
+    <frame id="2:19" name="display" x="0" y="0" width="375" height="65">
+      <text id="2:20" name="Display 34" x="20" y="12" width="180" height="41" />
+    </frame>
+    <frame id="2:21" name="title" x="0" y="65" width="375" height="58">
+      <text id="2:22" name="Title 28 semibold" x="20" y="12" width="235" height="34" />
+    </frame>
+    <frame id="2:23" name="headline" x="0" y="123" width="375" height="52">
+      <text id="2:24" name="Headline 22 / 28 semibold" x="20" y="12" width="271" height="28" />
+    </frame>
+    <frame id="2:25" name="body" x="0" y="175" width="375" height="46">
+      <text id="2:26" name="Body 17 / 22 regular text line" x="20" y="12" width="217" height="22" />
+    </frame>
+    <frame id="2:27" name="callout" x="0" y="221" width="375" height="45">
+      <text id="2:28" name="Callout 16 / 21 medium weight" x="20" y="12" width="221" height="21" />
+    </frame>
+    <frame id="2:29" name="subhead" x="0" y="266" width="375" height="44">
+      <text id="2:30" name="Subhead 15 / 20 regular, secondary" x="20" y="12" width="244" height="20" />
+    </frame>
+    <frame id="2:31" name="footnote" x="0" y="310" width="375" height="42">
+      <text id="2:32" name="Footnote 13 / 18 regular text in a longer line" x="20" y="12" width="263" height="18" />
+    </frame>
+    <frame id="2:33" name="caption" x="0" y="352" width="375" height="40">
+      <text id="2:34" name="Caption 12 / 16 with letter spacing 0.4 px" x="20" y="12" width="248" height="16" />
+    </frame>
+    <frame id="2:35" name="overline" x="0" y="392" width="375" height="37">
+      <text id="2:36" name="Overline 11 / 13 uppercase +6 %" x="20" y="12" width="207" height="13" />
+    </frame>
+    <frame id="2:37" name="auto-lh" x="0" y="429" width="375" height="45">
+      <text id="2:38" name="Auto line height 17 medium" x="20" y="12" width="220" height="21" />
+    </frame>
+    <frame id="2:39" name="percent-lh" x="0" y="474" width="375" height="47">
+      <text id="2:40" name="Line height 150 % at 15 px" x="20" y="12" width="184" height="23" />
+    </frame>
+    <frame id="2:41" name="tight" x="0" y="521" width="375" height="54">
+      <text id="2:42" name="Tight −2 % bold 24" x="20" y="12" width="211" height="30" />
+    </frame>
+  </frame>
+  <frame id="2:43" name="t-wrap" x="910" y="0" width="375" height="374">
+    <frame id="2:44" name="tight-title" x="0" y="0" width="375" height="82">
+      <text id="2:45" name="Transfer to savings account" x="20" y="16" width="229" height="22" />
+      <text id="2:46" name="Your balance is updated every few minutes" x="20" y="46" width="305" height="20" />
+    </frame>
+    <frame id="2:47" name="button-label" x="0" y="82" width="375" height="80">
+      <frame id="2:48" name="button" x="20" y="16" width="250" height="48">
+        <text id="2:49" name="Continue with bank account" x="16" y="12" width="218" height="24" />
+      </frame>
+    </frame>
+    <frame id="2:50" name="paragraph" x="0" y="162" width="375" height="120">
+      <text id="2:51" name="Payments sent after 6 pm are processed on the next business day. International transfers can take up to three days, and a small fee may apply depending on the destination country." x="20" y="16" width="335" height="88" />
+    </frame>
+    <frame id="2:52" name="columns" x="0" y="282" width="375" height="92">
+      <text id="2:53" name="Internationalization settings" x="20" y="16" width="120" height="40" />
+      <text id="2:54" name="Notifications and sounds for every device" x="156" y="16" width="120" height="60" />
+    </frame>
+  </frame>
+  <frame id="2:55" name="t-effects" x="1365" y="0" width="375" height="660">
+    <frame id="2:56" name="shadow-sm" x="0" y="0" width="375" height="120">
+      <frame id="2:57" name="card" x="20" y="24" width="335" height="72">
+        <text id="2:58" name="Shadow sm · 0 1 3 / 0 1 2" x="20" y="26" width="177" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:59" name="shadow-lg" x="0" y="120" width="375" height="120">
+      <frame id="2:60" name="card" x="20" y="24" width="335" height="72">
+        <text id="2:61" name="Shadow lg · 0 12 16 −4 / 0 4 6 −2" x="20" y="26" width="235" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:62" name="inner" x="0" y="240" width="375" height="120">
+      <frame id="2:63" name="card" x="20" y="24" width="335" height="72">
+        <text id="2:64" name="Inner shadow · 0 2 4" x="20" y="26" width="146" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:65" name="blur" x="0" y="360" width="375" height="112">
+      <frame id="2:66" name="row" x="20" y="24" width="240" height="64">
+        <ellipse id="2:67" name="Ellipse" x="0" y="0" width="64" height="64" />
+        <ellipse id="2:68" name="Ellipse" x="88" y="0" width="64" height="64" />
+        <ellipse id="2:69" name="Ellipse" x="176" y="0" width="64" height="64" />
+      </frame>
+    </frame>
+    <frame id="2:70" name="glass" x="0" y="472" width="375" height="188">
+      <frame id="2:71" name="stage" x="20" y="24" width="335" height="140">
+        <ellipse id="2:72" name="Ellipse" x="200" y="-30" width="120" height="120" />
+        <frame id="2:73" name="glass-card" x="20" y="34" width="295" height="72">
+          <text id="2:74" name="Glass · background blur 12" x="20" y="26" width="192" height="20" />
+        </frame>
+      </frame>
+    </frame>
+  </frame>
+  <frame id="2:75" name="t-colors" x="1820" y="0" width="375" height="604">
+    <frame id="2:76" name="grays" x="0" y="0" width="375" height="80">
+      <rounded-rectangle id="2:77" name="swatch" x="20" y="16" width="48" height="48" />
+      <rounded-rectangle id="2:78" name="swatch" x="77.4000015258789" y="16" width="48" height="48" />
+      <rounded-rectangle id="2:79" name="swatch" x="134.8000030517578" y="16" width="48" height="48" />
+      <rounded-rectangle id="2:80" name="swatch" x="192.20001220703125" y="16" width="48" height="48" />
+      <rounded-rectangle id="2:81" name="swatch" x="249.60000610351562" y="16" width="48" height="48" />
+      <rounded-rectangle id="2:82" name="swatch" x="307" y="16" width="48" height="48" />
+    </frame>
+    <frame id="2:83" name="near" x="0" y="80" width="375" height="96">
+      <rounded-rectangle id="2:84" name="gray-500" x="20" y="16" width="160" height="64" />
+      <rounded-rectangle id="2:85" name="gray-400" x="195" y="16" width="160" height="64" />
+    </frame>
+    <frame id="2:86" name="text-colors" x="0" y="176" width="375" height="124">
+      <text id="2:87" name="Primary text #101828" x="20" y="16" width="153" height="20" />
+      <text id="2:88" name="Secondary text #475467" x="20" y="40" width="179" height="20" />
+      <text id="2:89" name="Tertiary text #667085" x="20" y="64" width="158" height="20" />
+      <text id="2:90" name="Brand text #6941C6" x="20" y="88" width="145" height="20" />
+    </frame>
+    <frame id="2:91" name="gradient-linear" x="0" y="300" width="375" height="112">
+      <rounded-rectangle id="2:92" name="linear" x="20" y="16" width="335" height="80" />
+    </frame>
+    <frame id="2:93" name="gradient-radial" x="0" y="412" width="375" height="112">
+      <rounded-rectangle id="2:94" name="radial" x="20" y="16" width="335" height="80" />
+    </frame>
+    <frame id="2:95" name="brand" x="0" y="524" width="375" height="80">
+      <frame id="2:96" name="button" x="20" y="16" width="335" height="48">
+        <text id="2:97" name="Continue" x="132" y="12" width="71" height="24" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="2:98" name="t-fractional" x="2275" y="0" width="375" height="401">
+    <frame id="2:99" name="half-band" x="0" y="0" width="375" height="48.5">
+      <text id="2:100" name="Band of 48.5 px" x="20" y="14.25" width="113" height="20" />
+    </frame>
+    <frame id="2:101" name="half-box" x="0" y="48.5" width="375" height="61">
+      <rounded-rectangle id="2:102" name="Rectangle" x="20.5" y="10.5" width="100.5" height="40.5" />
+    </frame>
+    <frame id="2:103" name="hairline" x="0" y="109.5" width="375" height="56.5">
+      <rounded-rectangle id="2:104" name="Rectangle" x="20" y="12" width="335" height="0.5" />
+      <text id="2:105" name="Under a 0.5 px hairline" x="20" y="24.5" width="159" height="20" />
+    </frame>
+    <frame id="2:106" name="odd-line-height" x="0" y="166" width="375" height="67">
+      <text id="2:107" name="Two lines of text with a line height of 21.5 px, which rounds differently in every engine." x="20" y="12" width="335" height="43" />
+    </frame>
+    <frame id="2:108" name="icon-strokes" x="0" y="233" width="375" height="56">
+      <frame id="2:109" name="home-20-1.5" x="20" y="18" width="20" height="20" />
+      <frame id="2:111" name="home-24-1.5" x="60" y="16" width="24" height="24" />
+      <frame id="2:113" name="home-24-1" x="104" y="16" width="24" height="24" />
+      <frame id="2:115" name="home-24-2" x="148" y="16" width="24" height="24" />
+    </frame>
+    <frame id="2:117" name="half-grid" x="0" y="289" width="375" height="112">
+      <frame id="2:118" name="card" x="20" y="16" width="161.5" height="80">
+        <text id="2:119" name="Income" x="17" y="15" width="45" height="18" />
+        <text id="2:120" name="$4,280.50" x="17" y="37" width="102" height="28" />
+      </frame>
+      <frame id="2:121" name="card" x="193.5" y="16" width="161.5" height="80">
+        <text id="2:122" name="Expenses" x="17" y="15" width="60" height="18" />
+        <text id="2:123" name="$1,932.17" x="17" y="37" width="92" height="28" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="2:124" name="t-radii" x="2730" y="0" width="375" height="463">
+    <frame id="2:125" name="radius-scale" x="0" y="0" width="375" height="88">
+      <rounded-rectangle id="2:126" name="Rectangle" x="20" y="16" width="56" height="56" />
+      <rounded-rectangle id="2:127" name="Rectangle" x="88" y="16" width="56" height="56" />
+      <rounded-rectangle id="2:128" name="Rectangle" x="156" y="16" width="56" height="56" />
+      <rounded-rectangle id="2:129" name="Rectangle" x="224" y="16" width="56" height="56" />
+      <frame id="2:130" name="pill" x="292" y="28" width="44" height="32">
+        <text id="2:131" name="Pill" x="12" y="6" width="20" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:132" name="sheet-top" x="0" y="88" width="375" height="95">
+      <frame id="2:133" name="sheet" x="0" y="24" width="375" height="71">
+        <rounded-rectangle id="2:134" name="Rectangle" x="169.5" y="8" width="36" height="5" />
+        <text id="2:135" name="Bottom sheet with top radius 24" x="55.5" y="29" width="264" height="22" />
+      </frame>
+    </frame>
+    <frame id="2:136" name="smoothing" x="0" y="183" width="375" height="128">
+      <rounded-rectangle id="2:137" name="smoothing-0" x="20" y="16" width="96" height="96" />
+      <rounded-rectangle id="2:138" name="smoothing-0.6" x="140" y="16" width="96" height="96" />
+    </frame>
+    <frame id="2:139" name="clip" x="0" y="311" width="375" height="152">
+      <frame id="2:140" name="mask" x="20" y="16" width="335" height="120">
+        <ellipse id="2:141" name="Ellipse" x="-40" y="20" width="180" height="180" />
+        <rounded-rectangle id="2:142" name="Rectangle" x="220" y="-10" width="200" height="40" />
+        <ellipse id="2:143" name="Ellipse" x="150" y="60" width="48" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="2:144" name="t-transparent" x="3185" y="0" width="375" height="396">
+    <frame id="2:145" name="overlay" x="0" y="0" width="375" height="200">
+      <frame id="2:146" name="photo" x="20" y="20" width="335" height="160">
+        <rounded-rectangle id="2:147" name="shade" x="0" y="80" width="335" height="80" />
+        <text id="2:148" name="Overlay · black 40 %" x="16" y="124" width="167" height="22" />
+      </frame>
+    </frame>
+    <frame id="2:149" name="opacity" x="0" y="200" width="375" height="76">
+      <frame id="2:150" name="chip-1" x="20" y="20" width="69" height="36">
+        <text id="2:151" name="100 %" x="14" y="8" width="41" height="20" />
+      </frame>
+      <frame id="2:152" name="chip-0.6" x="101" y="20" width="62" height="36">
+        <text id="2:153" name="60 %" x="14" y="8" width="34" height="20" />
+      </frame>
+      <frame id="2:154" name="chip-0.3" x="175" y="20" width="62" height="36">
+        <text id="2:155" name="30 %" x="14" y="8" width="34" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:156" name="text-alpha" x="0" y="276" width="375" height="120">
+      <text id="2:157" name="Text at 87 % black" x="20" y="20" width="139" height="24" />
+      <text id="2:158" name="Text at 60 % black" x="20" y="48" width="140" height="24" />
+      <text id="2:159" name="Text at 38 % black" x="20" y="76" width="140" height="24" />
+    </frame>
+  </frame>
+  <frame id="2:160" name="t-list" x="3640" y="0" width="375" height="396">
+    <frame id="2:161" name="header" x="0" y="0" width="375" height="48">
+      <text id="2:162" name="ACCOUNT" x="20" y="24" width="64" height="16" />
+    </frame>
+    <frame id="2:163" name="rows" x="0" y="48" width="375" height="227">
+      <frame id="2:164" name="row" x="0" y="0" width="375" height="56">
+        <frame id="2:165" name="bell" x="20" y="16" width="24" height="24" />
+        <text id="2:167" name="Notifications" x="56" y="16" width="238" height="24" />
+        <text id="2:168" name="On" x="306" y="18" width="21" height="20" />
+        <frame id="2:169" name="chevron" x="339" y="18" width="20" height="20" />
+      </frame>
+      <frame id="2:171" name="divider" x="0" y="56" width="375" height="1">
+        <rounded-rectangle id="2:172" name="Rectangle" x="56" y="0" width="319" height="1" />
+      </frame>
+      <frame id="2:173" name="row" x="0" y="57" width="375" height="56">
+        <frame id="2:174" name="lock" x="20" y="16" width="24" height="24" />
+        <text id="2:176" name="Privacy and security" x="56" y="16" width="271" height="24" />
+        <frame id="2:177" name="chevron" x="339" y="18" width="20" height="20" />
+      </frame>
+      <frame id="2:179" name="divider" x="0" y="113" width="375" height="1">
+        <rounded-rectangle id="2:180" name="Rectangle" x="56" y="0" width="319" height="1" />
+      </frame>
+      <frame id="2:181" name="row" x="0" y="114" width="375" height="56">
+        <frame id="2:182" name="card" x="20" y="16" width="24" height="24" />
+        <text id="2:184" name="Payment methods" x="56" y="16" width="206" height="24" />
+        <text id="2:185" name="2 cards" x="274" y="18" width="53" height="20" />
+        <frame id="2:186" name="chevron" x="339" y="18" width="20" height="20" />
+      </frame>
+      <frame id="2:188" name="divider" x="0" y="170" width="375" height="1">
+        <rounded-rectangle id="2:189" name="Rectangle" x="56" y="0" width="319" height="1" />
+      </frame>
+      <frame id="2:190" name="row" x="0" y="171" width="375" height="56">
+        <frame id="2:191" name="globe" x="20" y="16" width="24" height="24" />
+        <text id="2:193" name="Language" x="56" y="16" width="208" height="24" />
+        <text id="2:194" name="English" x="276" y="18" width="51" height="20" />
+        <frame id="2:195" name="chevron" x="339" y="18" width="20" height="20" />
+      </frame>
+    </frame>
+    <frame id="2:197" name="chips" x="0" y="275" width="375" height="64">
+      <frame id="2:198" name="track" x="0" y="14" width="555" height="36">
+        <frame id="2:199" name="chip" x="20" y="0" width="45" height="36">
+          <text id="2:200" name="All" x="14" y="8" width="17" height="20" />
+        </frame>
+        <frame id="2:201" name="chip" x="73" y="0" width="92" height="36">
+          <text id="2:202" name="Transfers" x="14" y="8" width="64" height="20" />
+        </frame>
+        <frame id="2:203" name="chip" x="173" y="0" width="130" height="36">
+          <text id="2:204" name="Card payments" x="14" y="8" width="102" height="20" />
+        </frame>
+        <frame id="2:205" name="chip" x="311" y="0" width="121" height="36">
+          <text id="2:206" name="Subscriptions" x="14" y="8" width="93" height="20" />
+        </frame>
+        <frame id="2:207" name="chip" x="440" y="0" width="95" height="36">
+          <text id="2:208" name="Cashback" x="14" y="8" width="67" height="20" />
+        </frame>
+      </frame>
+    </frame>
+    <frame id="2:209" name="full-divider" x="0" y="339" width="375" height="57">
+      <rounded-rectangle id="2:210" name="Rectangle" x="0" y="0" width="375" height="1" />
+      <frame id="2:211" name="note" x="0" y="17" width="375" height="20">
+        <text id="2:212" name="Signed in as alex@example.com" x="20" y="0" width="212" height="20" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="3:2" name="t-screen" x="4095" y="0" width="375" height="812">
+    <frame id="3:3" name="status" x="0" y="0" width="375" height="44">
+      <text id="3:4" name="9:41" x="32" y="14" width="32" height="20" />
+      <rounded-rectangle id="3:5" name="Rectangle" x="327" y="17" width="24" height="12" />
+      <rounded-rectangle id="3:6" name="Rectangle" x="330" y="19" width="18" height="8" />
+    </frame>
+    <frame id="3:7" name="nav" x="0" y="44" width="375" height="44">
+      <frame id="3:8" name="Frame" x="16" y="10" width="24" height="24" />
+      <text id="3:10" name="Wallet" x="161.5" y="11" width="52" height="22" />
+      <frame id="3:11" name="Frame" x="335" y="10" width="24" height="24" />
+    </frame>
+    <frame id="3:13" name="balance" x="20" y="104" width="335" height="172">
+      <text id="3:14" name="Total balance" x="20" y="20" width="90" height="20" />
+      <text id="3:15" name="$12,480.20" x="20" y="46" width="195" height="44" />
+      <text id="3:16" name="•••• 4821" x="20" y="96" width="67" height="20" />
+    </frame>
+    <frame id="3:17" name="recent" x="0" y="300" width="375" height="368">
+      <text id="3:18" name="Recent" x="20" y="0" width="62" height="28" />
+      <frame id="3:19" name="tx" x="20" y="32" width="335" height="64">
+        <ellipse id="3:20" name="Ellipse" x="0" y="12" width="40" height="40" />
+        <frame id="3:21" name="col" x="52" y="9" width="214" height="46">
+          <text id="3:22" name="Coffee Lab" x="0" y="0" width="85" height="24" />
+          <text id="3:23" name="Today, 9:12" x="0" y="26" width="76" height="20" />
+        </frame>
+        <text id="3:24" name="−$4.80" x="278" y="20" width="57" height="24" />
+      </frame>
+      <frame id="3:25" name="tx" x="20" y="100" width="335" height="64">
+        <ellipse id="3:26" name="Ellipse" x="0" y="12" width="40" height="40" />
+        <frame id="3:27" name="col" x="52" y="9" width="178" height="46">
+          <text id="3:28" name="Salary" x="0" y="0" width="48" height="24" />
+          <text id="3:29" name="Yesterday" x="0" y="26" width="66" height="20" />
+        </frame>
+        <text id="3:30" name="+$3,200.00" x="242" y="20" width="93" height="24" />
+      </frame>
+      <frame id="3:31" name="tx" x="20" y="168" width="335" height="64">
+        <ellipse id="3:32" name="Ellipse" x="0" y="12" width="40" height="40" />
+        <frame id="3:33" name="col" x="52" y="9" width="204" height="46">
+          <text id="3:34" name="Metro card" x="0" y="0" width="84" height="24" />
+          <text id="3:35" name="Mon, 18:40" x="0" y="26" width="74" height="20" />
+        </frame>
+        <text id="3:36" name="−$25.00" x="268" y="20" width="67" height="24" />
+      </frame>
+      <frame id="3:37" name="tx" x="20" y="236" width="335" height="64">
+        <ellipse id="3:38" name="Ellipse" x="0" y="12" width="40" height="40" />
+        <frame id="3:39" name="col" x="52" y="9" width="206" height="46">
+          <text id="3:40" name="Bookstore" x="0" y="0" width="78" height="24" />
+          <text id="3:41" name="Sun, 13:05" x="0" y="26" width="70" height="20" />
+        </frame>
+        <text id="3:42" name="−$18.99" x="270" y="20" width="65" height="24" />
+      </frame>
+      <frame id="3:43" name="tx" x="20" y="304" width="335" height="64">
+        <ellipse id="3:44" name="Ellipse" x="0" y="12" width="40" height="40" />
+        <frame id="3:45" name="col" x="52" y="9" width="206" height="46">
+          <text id="3:46" name="Refund" x="0" y="0" width="55" height="24" />
+          <text id="3:47" name="Sat, 10:22" x="0" y="26" width="66" height="20" />
+        </frame>
+        <text id="3:48" name="+$12.50" x="270" y="20" width="65" height="24" />
+      </frame>
+    </frame>
+    <frame id="3:49" name="tabbar" x="0" y="729" width="375" height="83">
+      <frame id="3:50" name="tab" x="12" y="9" width="80" height="49">
+        <frame id="3:51" name="Frame" x="28" y="0" width="24" height="24" />
+        <text id="3:53" name="Home" x="25.5" y="26" width="29" height="12" />
+      </frame>
+      <frame id="3:54" name="tab" x="102.33333587646484" y="9" width="80" height="49">
+        <frame id="3:55" name="Frame" x="28" y="0" width="24" height="24" />
+        <text id="3:57" name="Cards" x="25.5" y="26" width="29" height="12" />
+      </frame>
+      <frame id="3:58" name="tab" x="192.6666717529297" y="9" width="80" height="49">
+        <frame id="3:59" name="Frame" x="28" y="0" width="24" height="24" />
+        <text id="3:61" name="Stats" x="27.5" y="26" width="25" height="12" />
+      </frame>
+      <frame id="3:62" name="tab" x="283" y="9" width="80" height="49">
+        <frame id="3:63" name="Frame" x="28" y="0" width="24" height="24" />
+        <text id="3:65" name="Profile" x="24.5" y="26" width="31" height="12" />
+      </frame>
+    </frame>
+    <rounded-rectangle id="3:66" name="home-indicator" x="120.5" y="799" width="134" height="5" />
+    <frame id="3:67" name="fab" x="299" y="657" width="56" height="56">
+      <frame id="3:68" name="Frame" x="16" y="16" width="24" height="24" />
+    </frame>
+  </frame>
+  <frame id="3:70" name="t-icons" x="4550" y="0" width="375" height="348">
+    <frame id="3:71" name="stroke-16" x="0" y="0" width="375" height="48">
+      <frame id="3:72" name="search" x="20" y="16" width="16" height="16" />
+      <frame id="3:74" name="heart" x="60" y="16" width="16" height="16" />
+      <frame id="3:76" name="settings" x="100" y="16" width="16" height="16" />
+      <frame id="3:78" name="send" x="140" y="16" width="16" height="16" />
+      <frame id="3:80" name="calendar" x="180" y="16" width="16" height="16" />
+      <frame id="3:82" name="check" x="220" y="16" width="16" height="16" />
+    </frame>
+    <frame id="3:84" name="stroke-20" x="0" y="48" width="375" height="52">
+      <frame id="3:85" name="search" x="20" y="16" width="20" height="20" />
+      <frame id="3:87" name="heart" x="64" y="16" width="20" height="20" />
+      <frame id="3:89" name="settings" x="108" y="16" width="20" height="20" />
+      <frame id="3:91" name="send" x="152" y="16" width="20" height="20" />
+      <frame id="3:93" name="calendar" x="196" y="16" width="20" height="20" />
+      <frame id="3:95" name="check" x="240" y="16" width="20" height="20" />
+    </frame>
+    <frame id="3:97" name="stroke-24" x="0" y="100" width="375" height="56">
+      <frame id="3:98" name="search" x="20" y="16" width="24" height="24" />
+      <frame id="3:100" name="heart" x="68" y="16" width="24" height="24" />
+      <frame id="3:102" name="settings" x="116" y="16" width="24" height="24" />
+      <frame id="3:104" name="send" x="164" y="16" width="24" height="24" />
+      <frame id="3:106" name="calendar" x="212" y="16" width="24" height="24" />
+      <frame id="3:108" name="check" x="260" y="16" width="24" height="24" />
+    </frame>
+    <frame id="3:110" name="stroke-32" x="0" y="156" width="375" height="64">
+      <frame id="3:111" name="search" x="20" y="16" width="32" height="32" />
+      <frame id="3:113" name="heart" x="72" y="16" width="32" height="32" />
+      <frame id="3:115" name="settings" x="124" y="16" width="32" height="32" />
+      <frame id="3:117" name="send" x="176" y="16" width="32" height="32" />
+      <frame id="3:119" name="calendar" x="228" y="16" width="32" height="32" />
+      <frame id="3:121" name="check" x="280" y="16" width="32" height="32" />
+    </frame>
+    <frame id="3:123" name="filled" x="0" y="220" width="375" height="56">
+      <frame id="3:124" name="Frame" x="20" y="16" width="24" height="24" />
+      <frame id="3:126" name="Frame" x="68" y="16" width="24" height="24" />
+      <frame id="3:128" name="Frame" x="116" y="16" width="24" height="24" />
+    </frame>
+    <frame id="3:130" name="icon-buttons" x="0" y="276" width="375" height="72">
+      <frame id="3:131" name="icon-button" x="20" y="16" width="40" height="40">
+        <frame id="3:132" name="Frame" x="10" y="10" width="20" height="20" />
+      </frame>
+      <frame id="3:134" name="icon-button" x="76" y="16" width="40" height="40">
+        <frame id="3:135" name="Frame" x="10" y="10" width="20" height="20" />
+      </frame>
+      <frame id="3:137" name="icon-button" x="132" y="16" width="40" height="40">
+        <frame id="3:138" name="Frame" x="10" y="10" width="20" height="20" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="4:2" name="t-dense" x="5005" y="0" width="375" height="590">
+    <frame id="4:3" name="title" x="0" y="0" width="375" height="74">
+      <text id="4:4" name="Statement · September" x="20" y="20" width="191" height="22" />
+      <text id="4:5" name="24 operations · 2 pending" x="20" y="44" width="158" height="18" />
+    </frame>
+    <frame id="4:6" name="table" x="0" y="74" width="375" height="464">
+      <frame id="4:7" name="head" x="0" y="0" width="375" height="32">
+        <text id="4:8" name="DATE" x="20" y="7.5" width="64" height="16" />
+        <text id="4:9" name="DESCRIPTION" x="84" y="7.5" width="175" height="16" />
+        <text id="4:10" name="AMOUNT" x="259" y="7.5" width="96" height="16" />
+      </frame>
+      <frame id="4:11" name="row" x="0" y="32" width="375" height="36">
+        <text id="4:12" name="01.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:13" name="Coffee Lab" x="84" y="8.5" width="175" height="18" />
+        <text id="4:14" name="−4.80" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:15" name="row" x="0" y="68" width="375" height="36">
+        <text id="4:16" name="01.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:17" name="Metro card top-up" x="84" y="8.5" width="175" height="18" />
+        <text id="4:18" name="−25.00" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:19" name="row" x="0" y="104" width="375" height="36">
+        <text id="4:20" name="02.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:21" name="Salary, Acme Inc." x="84" y="8.5" width="175" height="18" />
+        <text id="4:22" name="+3,200.00" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:23" name="row" x="0" y="140" width="375" height="36">
+        <text id="4:24" name="03.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:25" name="Bookstore" x="84" y="8.5" width="175" height="18" />
+        <text id="4:26" name="−18.99" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:27" name="row" x="0" y="176" width="375" height="36">
+        <text id="4:28" name="04.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:29" name="Grocery market" x="84" y="8.5" width="175" height="18" />
+        <text id="4:30" name="−61.47" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:31" name="row" x="0" y="212" width="375" height="36">
+        <text id="4:32" name="05.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:33" name="Cinema tickets ×2" x="84" y="8.5" width="175" height="18" />
+        <text id="4:34" name="−22.00" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:35" name="row" x="0" y="248" width="375" height="36">
+        <text id="4:36" name="06.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:37" name="Refund, Bookstore" x="84" y="8.5" width="175" height="18" />
+        <text id="4:38" name="+12.50" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:39" name="row" x="0" y="284" width="375" height="36">
+        <text id="4:40" name="07.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:41" name="Mobile plan" x="84" y="8.5" width="175" height="18" />
+        <text id="4:42" name="−11.11" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:43" name="row" x="0" y="320" width="375" height="36">
+        <text id="4:44" name="08.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:45" name="Pharmacy" x="84" y="8.5" width="175" height="18" />
+        <text id="4:46" name="−7.30" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:47" name="row" x="0" y="356" width="375" height="36">
+        <text id="4:48" name="09.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:49" name="Taxi" x="84" y="8.5" width="175" height="18" />
+        <text id="4:50" name="−14.60" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:51" name="row" x="0" y="392" width="375" height="36">
+        <text id="4:52" name="10.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:53" name="Gym membership" x="84" y="8.5" width="175" height="18" />
+        <text id="4:54" name="−39.00" x="259" y="8.5" width="96" height="18" />
+      </frame>
+      <frame id="4:55" name="row" x="0" y="428" width="375" height="36">
+        <text id="4:56" name="11.09" x="20" y="8.5" width="64" height="18" />
+        <text id="4:57" name="Transfer to savings" x="84" y="8.5" width="175" height="18" />
+        <text id="4:58" name="−500.00" x="259" y="8.5" width="96" height="18" />
+      </frame>
+    </frame>
+    <frame id="4:59" name="total" x="0" y="538" width="375" height="52">
+      <text id="4:60" name="Balance change" x="20" y="12" width="114" height="20" />
+      <text id="4:61" name="+2,508.23" x="277" y="12" width="78" height="20" />
+    </frame>
+  </frame>
+</canvas>

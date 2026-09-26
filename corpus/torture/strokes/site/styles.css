@@ -1,0 +1,91 @@
+/* t-strokes (Figma 2:2). Tokens from design/figma-code/strokes.tsx. */
+:root {
+  --gray-300: #d0d5dd;
+  --gray-50: #f9fafb;
+  --gray-900: #101828;
+  --primary-600: #7f56d9;
+  --white: #fff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--white);
+}
+
+body {
+  font-family: Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+p {
+  margin: 0;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Every band: a 64 px card with 16 px above and below, 20 px from the screen edges. */
+.band {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+}
+
+.card {
+  /* Width of an inside stroke drawn as an inset shadow. Figma's auto layout counts an inside stroke into the
+     padding (text x = 20 + stroke in the metadata); center and outside strokes do not move the content. */
+  --stroke-inside: 0px;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 calc(20px + var(--stroke-inside));
+  border-radius: 12px;
+  background: var(--white);
+  overflow: hidden;
+}
+
+.label {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--gray-900);
+  white-space: nowrap;
+}
+
+/* Figma strokes: inside → inset shadow (keeps the box size), outside → outer shadow. */
+.card--inside {
+  --stroke-inside: 1px;
+  box-shadow: inset 0 0 0 var(--stroke-inside) var(--gray-300);
+}
+
+/* Center 2 px: half inside, half outside the box edge. */
+.card--center {
+  outline: 2px solid var(--gray-300);
+  outline-offset: -1px;
+}
+
+.card--outside {
+  box-shadow: 0 0 0 2px var(--gray-300);
+}
+
+/* A shadow has no dash pattern: a real dashed border. With border-box it stays inside the 335×64 box and
+   pushes the text in by 1 px, like Figma's inside stroke, so no --stroke-inside here. */
+.card--dashed {
+  border: 1px dashed var(--gray-300);
+}
+
+.card--thick {
+  --stroke-inside: 2px;
+  border-radius: 16px;
+  background: var(--gray-50);
+  box-shadow: inset 0 0 0 var(--stroke-inside) var(--primary-600);
+}

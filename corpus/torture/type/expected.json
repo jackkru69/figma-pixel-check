@@ -1,0 +1,77 @@
+{
+  "sections": {
+    "display": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "title": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.13,
+      "color": 0
+    },
+    "headline": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.06,
+      "color": 0
+    },
+    "body": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 1.55,
+      "color": 0
+    },
+    "callout": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.8,
+      "color": 0
+    },
+    "subhead": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.55,
+      "color": 0
+    },
+    "footnote": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.93,
+      "color": 0
+    },
+    "caption": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.01,
+      "color": 0
+    },
+    "overline": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.19,
+      "color": 0
+    },
+    "auto-lh": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.13,
+      "color": 0
+    },
+    "percent-lh": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 2.14,
+      "color": 0
+    },
+    "tight": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 3.29,
+      "color": 0.09
+    }
+  },
+  "spacingFlags": {}
+}

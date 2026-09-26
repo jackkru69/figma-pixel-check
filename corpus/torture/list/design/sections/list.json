@@ -1,0 +1,28 @@
+{
+  "node": "2:160",
+  "reference": "list-375.png",
+  "width": 375,
+  "height": 396,
+  "sections": [
+    {
+      "name": "header",
+      "top": 0,
+      "height": 48
+    },
+    {
+      "name": "rows",
+      "top": 48,
+      "height": 227
+    },
+    {
+      "name": "chips",
+      "top": 275,
+      "height": 64
+    },
+    {
+      "name": "full-divider",
+      "top": 339,
+      "height": 57
+    }
+  ]
+}

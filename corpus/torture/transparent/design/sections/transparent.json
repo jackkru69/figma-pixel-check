@@ -1,0 +1,23 @@
+{
+  "node": "2:144",
+  "reference": "transparent-375.png",
+  "width": 375,
+  "height": 396,
+  "sections": [
+    {
+      "name": "overlay",
+      "top": 0,
+      "height": 200
+    },
+    {
+      "name": "opacity",
+      "top": 200,
+      "height": 76
+    },
+    {
+      "name": "text-alpha",
+      "top": 276,
+      "height": 120
+    }
+  ]
+}

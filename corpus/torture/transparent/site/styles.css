@@ -1,0 +1,117 @@
+/* t-transparent (2:144). The frame has no fill: the screen draws no background of its own and shows the
+   app's page background. The #E5E5E5 in the reference PNG is Figma's canvas, not part of the design. */
+:root {
+  --color-text-primary: rgba(0, 0, 0, 0.87);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-text-disabled: rgba(0, 0, 0, 0.38);
+  --color-success: #12b76a;
+  --color-blue-600: #1570ef;
+  --color-blue-300: #53b1fd;
+  --color-scrim: rgba(0, 0, 0, 0.4);
+  --color-on-dark: #fff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+}
+
+p,
+figure {
+  margin: 0;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+}
+
+/* overlay (2:145): a 160 px photo with a black 40 % shade on its lower half and a caption on the shade. */
+.overlay {
+  padding: 20px;
+}
+
+.photo {
+  position: relative;
+  height: 160px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--color-blue-600), var(--color-blue-300));
+}
+
+.photo__shade {
+  position: absolute;
+  inset: 80px 0 0;
+  background: var(--color-scrim);
+}
+
+.photo__caption {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--color-on-dark);
+  white-space: nowrap;
+}
+
+/* opacity (2:149): the same chip at layer opacity 1, 0.6 and 0.3. */
+.chips {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--color-success);
+  color: var(--color-on-dark);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip--60 {
+  opacity: 0.6;
+}
+
+.chip--30 {
+  opacity: 0.3;
+}
+
+/* text-alpha (2:156): Medium 16/24 at 87, 60 and 38 % black. */
+.text-alpha {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.text-alpha__line {
+  white-space: nowrap;
+}
+
+.text-alpha__line--primary {
+  color: var(--color-text-primary);
+}
+
+.text-alpha__line--secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-alpha__line--disabled {
+  color: var(--color-text-disabled);
+}

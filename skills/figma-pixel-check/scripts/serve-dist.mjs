@@ -27,6 +27,9 @@ const TYPES = {
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
   '.otf': 'font/otf',
+  '.wasm': 'application/wasm',
+  '.webmanifest': 'application/manifest+json',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 const isFile = (file) => existsSync(file) && statSync(file).isFile();
@@ -36,10 +39,20 @@ export function serveDist({ root = 'dist', port = 4799 } = {}) {
   if (!existsSync(base)) throw new Error(`Nothing to serve: ${base} does not exist. Build the app first.`);
   const server = createServer((req, res) => {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
-    let file = normalize(join(base, decodeURIComponent(pathname)));
+    let path;
+    try {
+      path = decodeURIComponent(pathname);
+    } catch {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('Malformed URL');
+      return;
+    }
+    // A page navigation gets the app even when its path has a dot (/preview/home.loading); a missing asset,
+    // or a missing page of a multi-page site (/checkout.html), gets 404.
+    const navigation = (req.headers.accept?.includes('text/html') ?? false) && !/\.html?$/i.test(pathname);
+    let file = normalize(join(base, path));
     if (file !== base && !file.startsWith(base + sep)) file = null;
     else if (!isFile(file) && isFile(join(file, 'index.html'))) file = join(file, 'index.html');
-    else if (!isFile(file)) file = extname(pathname) ? null : join(base, 'index.html');
+    else if (!isFile(file)) file = extname(pathname) && !navigation ? null : join(base, 'index.html');
     if (!file || !isFile(file)) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('Not found');
       return;

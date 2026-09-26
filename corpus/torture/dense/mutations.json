@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "table-head",
+    "css": ".ops thead tr { height: 36px !important; }",
+    "note": "header row given the body row height: 32 → 36 px"
+  },
+  {
+    "kind": "gap",
+    "section": "title",
+    "css": ".statement__title { gap: 6px !important; }",
+    "note": "gap between title and subtitle 2 → 6 px"
+  },
+  {
+    "kind": "margin",
+    "section": "table-head",
+    "css": ".ops { margin-top: 4px !important; }",
+    "note": "stray 4 px margin above the table"
+  },
+  {
+    "kind": "font-size",
+    "section": "table-body",
+    "css": ".ops td { font-size: 14px !important; }",
+    "note": "row text 13 → 14 px"
+  },
+  {
+    "kind": "line-height",
+    "section": "title",
+    "css": ".statement__title h1 { line-height: 24px !important; }",
+    "note": "title line 22 → 24 px"
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "table-head",
+    "css": ".ops th { letter-spacing: 0.04em !important; }",
+    "note": "tracking added to the uppercase header labels; Figma has 0"
+  },
+  {
+    "kind": "font-weight",
+    "section": "table-body",
+    "css": ".ops td.ops__amount { font-weight: 600 !important; }",
+    "note": "amounts Medium 500 → Semi Bold 600"
+  },
+  {
+    "kind": "text-color",
+    "section": "table-body",
+    "css": ".ops td:first-child { color: #475467 !important; }",
+    "note": "date column gray-500 #667085 → neighbouring token gray-600 #475467"
+  },
+  {
+    "kind": "fill-color",
+    "section": "table-head",
+    "css": ".ops th { background: #f2f4f7 !important; }",
+    "note": "header fill gray-50 #F9FAFB → neighbouring token gray-100 #F2F4F7"
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "table-body",
+    "css": ".ops td { box-sizing: content-box !important; height: 36px !important; }",
+    "note": "cell height set in content-box: the 1 px divider adds to every row, 36 → 37 px (+12 px over the table)"
+  },
+  {
+    "kind": "wrap",
+    "section": "title",
+    "css": ".statement__title p { max-width: 150px !important; }",
+    "note": "subtitle given a max-width narrower than its text: wraps to two lines"
+  },
+  {
+    "kind": "missing",
+    "section": "table-body",
+    "css": ".ops th, .ops td { border-bottom-style: none !important; }",
+    "note": "row dividers not drawn (e.g. an invalid var() in the border shorthand); row heights unchanged"
+  },
+  {
+    "kind": "shift",
+    "section": "total",
+    "css": ".statement__total strong { position: relative; top: 2px; }",
+    "note": "total amount nudged 2 px down"
+  },
+  {
+    "kind": "opacity",
+    "section": "title",
+    "css": ".statement__title p { opacity: 0.8 !important; }",
+    "note": "subtitle dimmed with opacity 0.8 on top of its grey colour"
+  }
+]

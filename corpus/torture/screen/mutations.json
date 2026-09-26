@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "balance",
+    "css": ".balance { height: 176px !important; }",
+    "note": "Balance card 172 → 176 px: the fixed card height typed from memory. Card grows 4 px, Recent moves down with it."
+  },
+  {
+    "kind": "gap",
+    "section": "recent",
+    "css": ".tx-list { gap: 8px !important; }",
+    "note": "Gap between transaction rows 4 → 8 px (spacing-1 instead of spacing-2 token mix-up). The list grows 16 px."
+  },
+  {
+    "kind": "margin",
+    "section": "recent",
+    "css": ".recent { margin-top: 28px !important; }",
+    "note": "Space between the balance card and the Recent heading 24 → 28 px."
+  },
+  {
+    "kind": "font-size",
+    "section": "recent",
+    "css": ".tx__name { font-size: 15px !important; }",
+    "note": "Transaction name 16 → 15 px (iOS body size used instead of the design's 16)."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "balance",
+    "css": ".balance__amount { letter-spacing: 0 !important; }",
+    "note": "The -2 % tracking (-0.72 px at 36 px) of the balance amount dropped: the amount sets about 6 px wider."
+  },
+  {
+    "kind": "font-weight",
+    "section": "nav",
+    "css": ".nav__title { font-weight: 500 !important; }",
+    "note": "Navigation title Semi Bold 600 → Medium 500."
+  },
+  {
+    "kind": "text-color",
+    "section": "recent",
+    "css": ".tx__date { color: #475467 !important; }",
+    "note": "Transaction date gray-500 #667085 → the neighbouring token gray-600 #475467."
+  },
+  {
+    "kind": "fill-color",
+    "section": "fab",
+    "css": ".fab { background: #9e77ed !important; }",
+    "note": "Floating button fill brand-600 #7F56D9 → brand-500 #9E77ED."
+  },
+  {
+    "kind": "radius",
+    "section": "balance",
+    "css": ".balance { border-radius: 16px !important; }",
+    "note": "Balance card corner radius 20 → 16 px (radius-xl instead of radius-2xl)."
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "tabbar",
+    "css": ".tabbar { border-top: 0 !important; box-shadow: inset 0 1px 0 #eaecf0 !important; }",
+    "note": "Tab bar hairline drawn as an inset shadow although the Figma stroke is included in the layout: the tabs move up 1 px and the bar is 1 px shorter."
+  },
+  {
+    "kind": "shadow",
+    "section": "balance",
+    "css": ".balance { box-shadow: 0 4px 8px -2px rgb(16 24 40 / 0.1) !important; }",
+    "note": "The card's coloured shadow (0 12 24 -8, brand-800 at 30 %) replaced by the generic grey shadow-md token."
+  },
+  {
+    "kind": "icon-size",
+    "section": "nav",
+    "css": ".icon-button, .icon-button img { width: 20px !important; height: 20px !important; }",
+    "note": "Back and more icons 24 → 20 px."
+  },
+  {
+    "kind": "missing",
+    "section": "balance",
+    "css": ".balance__card { display: none !important; }",
+    "note": "The masked card number «•••• 4821» is not rendered (e.g. the field is null in the preview data)."
+  },
+  {
+    "kind": "shift",
+    "section": "fab",
+    "css": ".fab { right: 22px !important; }",
+    "note": "Floating button 2 px to the left: right offset 20 → 22 px."
+  }
+]

@@ -169,16 +169,20 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 | ---------- | ------------------------------------------------------------------------------------------- |
 | text       | font family, size, weight, line height (AUTO: the height of a one-line Figma text box), letter spacing, the case as displayed (Figma's text case against `text-transform`), colour × every layer's opacity |
 | any other  | size on the axes Figma fixes (a hugging or filling size follows its text); opacity with its ancestors'; a solid fill against `background-color`; a gradient's first and last stops; corner radii as drawn (at most half the shorter side; an ellipse is round; a smoothed corner may be a `clip-path`) |
-| strokes    | colour and weight: a `border`, an `outline`, or a `box-shadow` ring (inset, outer, or both halves of a centred stroke); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells) |
-| effects    | drop and inner shadows against `box-shadow`; layer and background blur against `filter` / `backdrop-filter: blur(R/2)` |
+| any placed by hand | its position (outside Auto Layout: a floating button, a caption on a photo, a dot in a mask): down from its section's top, across from the frame's edge, within 1 px; texts too |
+| strokes    | colour, weight and alignment: a `border` (inside, or outside when the box grew by it), an `outline` (by its offset), or a `box-shadow` ring (inset inside, outer outside, both halves centred); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells) |
+| effects    | drop and inner shadows against `box-shadow`, and a shadow the design does not have; layer and background blur against `filter` / `backdrop-filter: blur(R/2)`; corner smoothing needs a `clip-path` |
+| icons      | vectors inside an SVG shown with `<img>`: their stroke colour and weight and their fill against the shapes of the SVG file |
+| every node | found but not shown (`display: none`, `visibility: hidden`) is reported as hidden |
 | auto layout | gap and padding as laid out, from the box to the children and between them, so margins or `gap` both count. A side is checked where Figma fixes it: the start or end it is aligned to, both when the frame hugs its content, and centred content must sit as far from both padded sides. An INSIDE stroke included in the layout adds to its side's padding; a border the build draws where Figma has no stroke counts as a child (a divider line); a child that is only a text counts by its content box (a padded table cell) |
 
 Tolerances: 0.5 px for radii and type, 1 px for sizes, 0.75 px for spacing, 0.1 px for letter spacing, ΔE 2
 for colours, none for weights. A Figma text that is not found in its section is listed too: the copy changed,
 is missing, or the text is split across elements. Other Figma nodes without an element are counted in the
-column (`12 ✓ · 4 without an element`): tag them to check them. Vectors inside an `<img>` SVG and lines drawn
-by `::before` / `::after` cannot be tagged. One element may carry several ids (`data-node-id="2:197 2:198"`)
-when the build merges Figma frames. `--max-style=<count>` fails a section with more differences (0: every
+column (`12 ✓ · 4 without an element`): tag them to check them. A node the build draws with `::before` or
+`::after` is tagged with `data-node-id-before` / `data-node-id-after` on its element (size, fill and opacity
+are compared). One element may carry several ids (`data-node-id="2:197 2:198"`) when the build merges Figma
+frames. `--max-style=<count>` fails a section with more differences (0: every
 value must be Figma's), and `maxStyle` on a section allows its known ones.
 
 ## Other phone sizes
@@ -351,6 +355,7 @@ check. Upload
 - Fonts must match: install the design's font files in the app, or the text sections will stay high.
 - Without `styles/<id>.json`, the pixel checks cannot see the colour of small text (glyph strokes are
   never flat), a radius changed by a few pixels (a 1 px band at the corners) or a font weight: export the
-  styles (see [Style check](#style-check)): with them the corpus benchmark detects 157 of 167 realistic
-  mistakes, against 110 without (`corpus/BENCHMARK.md`). The style check does not read inside an `<img>`,
-  nor a gradient's angle.
+  styles (see [Style check](#style-check)): with them the corpus benchmark detects all 168 realistic mistakes,
+  against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
+  as "no known blind spot left", not as a detection rate on other designs. The style check does not compare
+  a gradient's angle (the colour check sees a wrong one) nor a raster image's content.

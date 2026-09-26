@@ -266,9 +266,10 @@ describe('pixel-diff --max-geometry', () => {
       nodes: [
         { id: '9:1', name: 'nav', type: 'FRAME', x: 0, y: 0, width: 375, height: 56, layoutMode: 'HORIZONTAL', layoutWrap: 'NO_WRAP', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'CENTER', itemSpacing: 12, padding: [0, 20, 0, 20] },
         text('9:2', 'Profile', 18, { fontSize: 17, fontWeight: 600 }),
+        { id: '9:7', name: 'hero', type: 'FRAME', x: 0, y: 56, width: 375, height: 180, layoutMode: 'VERTICAL', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'CENTER', itemSpacing: 0, padding: [16, 20, 24, 20] },
         text('9:3', 'Alex Kim', 150, { fontSize: 20, fontWeight: 600, lineHeight: { unit: 'PIXELS', value: 24 } }),
         text('9:4', '@alexkim', 178, { fills: [{ type: 'SOLID', color: '#6B7080', opacity: 1 }] }),
-        { id: '9:5', name: 'button', type: 'FRAME', x: 20, y: 516, width: 335, height: 48, radius: 14, fills: [{ type: 'SOLID', color: '#FDE8E8', opacity: 1 }] },
+        { id: '9:5', name: 'button', type: 'FRAME', x: 20, y: 516, width: 335, height: 48, radius: 14, fills: [{ type: 'SOLID', color: '#FDE8E8', opacity: 1 }], layoutMode: 'HORIZONTAL', primaryAxisAlignItems: 'CENTER', counterAxisAlignItems: 'CENTER', itemSpacing: 0, padding: [0, 0, 0, 0] },
         text('9:6', 'Sign out', 530, { fontWeight: 600, fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] }),
       ],
     });

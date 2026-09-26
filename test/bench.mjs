@@ -59,6 +59,7 @@ function signals(base, mutated) {
   const add = (name, signal) => bySection.set(name, [...(bySection.get(name) ?? []), signal]);
   mutated.result.sections.forEach((section, i) => {
     const before = base.result.sections[i];
+    if (before && section.missing && !before.missing) add(section.name, { type: 'geometry', detail: 'missing in DOM' });
     if (!before || section.missing || before.missing) return;
     if (section.dTop !== before.dTop || section.dHeight !== before.dHeight) {
       add(section.name, { type: 'geometry', detail: `Δ top ${before.dTop}→${section.dTop}, Δ height ${before.dHeight}→${section.dHeight}` });
@@ -81,7 +82,7 @@ function signals(base, mutated) {
   for (const row of mutated.spacing) {
     const before = base.spacing.find((candidate) => candidate.section === row.section);
     if (!before) continue;
-    const flags = PROPS.filter((prop) => row[prop].flagged && !before[prop].flagged);
+    const flags = PROPS.filter((prop) => row[prop].flagged && !before[prop]?.flagged);
     if (row.gaps.flagged && !before.gaps.flagged) flags.push('gaps');
     if (flags.length) add(row.section, { type: 'spacing', detail: `new flag: ${flags.join(', ')}` });
     const moved = PROPS.filter((prop) => row[prop].delta !== before[prop].delta);
@@ -93,10 +94,17 @@ function signals(base, mutated) {
 function verdict(mutation, base, mutated) {
   if (base.png.equals(mutated.png)) return { status: 'invalid', signals: {} };
   const bySection = signals(base, mutated);
-  const own = bySection.get(mutation.section) ?? [];
+  // A section nested in the mutated one (a card section inside its band) is part of it.
+  const boxOf = (name) => base.result.sections.find((section) => section.name === name)?.figma;
+  const target = boxOf(mutation.section);
+  const within = (name) => {
+    const box = boxOf(name);
+    return name === mutation.section || (target && box && box.top >= target.top && box.top + box.height <= target.top + target.height);
+  };
+  const own = [...bySection.entries()].filter(([name]) => within(name)).flatMap(([, list]) => list);
   const STRONG_TYPES = ['geometry', 'pixel', 'spacing', 'color', 'style'];
   const strong = own.filter((s) => STRONG_TYPES.includes(s.type));
-  const elsewhere = [...bySection.entries()].filter(([name]) => name !== mutation.section);
+  const elsewhere = [...bySection.entries()].filter(([name]) => !within(name));
   const status = strong.length
     ? 'detected'
     : own.length

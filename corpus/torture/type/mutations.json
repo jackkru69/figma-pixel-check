@@ -62,8 +62,8 @@
   {
     "kind": "wrap",
     "section": "footnote",
-    "css": ".footnote { width: 263px !important; }",
-    "note": "The Figma text layer's width (263 px) copied as a fixed width: Chromium sets the line about 2 px wider, so \"line\" wraps to a second line and the band grows by 18 px."
+    "css": ".footnote { width: 250px !important; }",
+    "note": "The text box set narrower than Figma's 263 px text: the line wraps to a second line and the band grows by 18 px."
   },
   {
     "kind": "missing",

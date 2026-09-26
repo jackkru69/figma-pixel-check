@@ -1,4 +1,4 @@
-/* global CSS, document, getComputedStyle, Node, SVGElement -- used inside page.evaluate callbacks that run in the browser */
+/* global CSS, DOMParser, document, fetch, getComputedStyle, Node, SVGElement -- used inside page.evaluate callbacks that run in the browser */
 // Style check for pixel-diff.mjs: Figma's own values (styles/<id>.json, exported with figma-styles.js through
 // use_figma) against the computed styles of the page. Pixels cannot see a wrong font weight, a 12 → 8 radius
 // or a neighbouring text colour; the values can.
@@ -41,8 +41,20 @@ export function readFigmaStyles(dir, id, sections) {
         return y >= section.top && y < section.top + section.height && across(section, x, x);
       }),
     );
+  // The parent is the smallest other node whose box holds this one; its Auto Layout places this node (flow),
+  // unless Figma says the node is positioned absolutely.
+  const holds = (outer, inner) =>
+    outer !== inner &&
+    outer.type !== 'TEXT' &&
+    inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
+  const parentOf = (node, index) =>
+    nodes.filter((other, i) => i < index && holds(other, node)).sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
   return nodes
-    .map((node) => ({ ...node, place: placeOf(node) }))
+    .map((node, index) => ({
+      ...node,
+      place: placeOf(node),
+      flow: node.layoutPositioning !== 'ABSOLUTE' && Boolean(parentOf(node, index)?.layoutMode),
+    }))
     .filter((node) => node.place && (node.type === 'TEXT' ? node.characters?.trim() : true));
 }
 
@@ -59,7 +71,7 @@ export function requestsFor(nodes, sectionNames) {
 }
 
 /** Runs in the page: finds the element of every Figma node and reads what the check compares. */
-export function readDom(requests) {
+export async function readDom(requests) {
   const squash = (text) => text.replace(/\s+/g, '').toLowerCase();
   const sectionsByName = new Map();
   for (const element of document.querySelectorAll('[data-section]')) {
@@ -151,8 +163,51 @@ export function readDom(requests) {
     'backgroundImage', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius',
     'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopColor', 'borderRightColor',
     'borderBottomColor', 'borderLeftColor', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle',
-    'outlineWidth', 'outlineStyle', 'outlineColor', 'boxShadow', 'filter', 'backdropFilter', 'clipPath',
+    'outlineWidth', 'outlineStyle', 'outlineColor', 'outlineOffset', 'boxShadow', 'filter', 'backdropFilter', 'clipPath',
+    'width', 'height', 'opacity',
   ];
+  // A node drawn by a pseudo-element: data-node-id-before / data-node-id-after on its element.
+  const pseudoOf = (id) => {
+    for (const which of ['before', 'after']) {
+      const element = document.querySelector(`[data-node-id-${which}~="${CSS.escape(id)}"]`);
+      if (element) return { element, which };
+    }
+    return null;
+  };
+  // The shapes of an SVG shown with <img>: their stroke, stroke width (in rendered px) and fill.
+  const svgShapes = async (img) => {
+    const src = img.currentSrc || img.src;
+    if (!/\.svg(\?|#|$)|^data:image\/svg/i.test(src)) return null;
+    try {
+      const svg = new DOMParser().parseFromString(await (await fetch(src)).text(), 'image/svg+xml').documentElement;
+      const viewBox = (svg.getAttribute('viewBox') ?? '').split(/[\s,]+/).map(parseFloat);
+      const scale = img.getBoundingClientRect().width / (viewBox[2] || parseFloat(svg.getAttribute('width')) || img.naturalWidth || 1);
+      const inherited = (shape, name) => {
+        for (let node = shape; node && node.getAttribute; node = node.parentNode) {
+          const value = node.getAttribute(name) ?? node.style?.getPropertyValue(name);
+          if (value) return value;
+        }
+        return null;
+      };
+      // Named colours and currentColor (black in an <img>) as rgb(), the way the check reads colours.
+      const probe = document.createElement('i');
+      document.body.append(probe);
+      const rgb = (value) => {
+        if (!value || value === 'none') return value;
+        probe.style.color = value === 'currentColor' ? '#000' : value;
+        return getComputedStyle(probe).color;
+      };
+      const shapes = [...svg.querySelectorAll('path, circle, rect, line, polyline, polygon, ellipse')].map((shape) => ({
+        stroke: rgb(inherited(shape, 'stroke')),
+        strokeWidth: parseFloat(inherited(shape, 'stroke-width') ?? '1') * scale,
+        fill: rgb(inherited(shape, 'fill') ?? '#000000'),
+      }));
+      probe.remove();
+      return shapes;
+    } catch {
+      return null;
+    }
+  };
   const elements = requests.map((request) => {
     const element = find(request);
     if (element && request.type === 'TEXT') taken.add(element);
@@ -160,12 +215,25 @@ export function readDom(requests) {
   });
   const texts = new Set(elements.filter((element, i) => element && requests[i].type === 'TEXT'));
   const frames = new Set(elements.filter((element, i) => element && requests[i].type !== 'TEXT'));
-  return requests.map((request, i) => {
+  return Promise.all(requests.map(async (request, i) => {
     const element = elements[i];
-    if (!element) return null;
+    const sectionElement = sectionsByName.get(request.section)?.[request.occurrence];
+    const sectionBox = sectionElement ? box(sectionElement.getBoundingClientRect()) : null;
+    if (!element) {
+      const pseudo = request.type !== 'TEXT' ? pseudoOf(request.id) : null;
+      if (!pseudo) return null;
+      const style = getComputedStyle(pseudo.element, `::${pseudo.which}`);
+      return { pseudo: pseudo.which, opacity: opacityOf(pseudo.element) * parseFloat(style.opacity), children: [], style: Object.fromEntries(KEYS.map((key) => [key, style[key]])) };
+    }
+    // Found but not shown (display: none, visibility: hidden): the design shows it.
+    if (element.getClientRects().length === 0 || element.checkVisibility?.({ visibilityProperty: true }) === false) {
+      return { hidden: true, children: [], style: {} };
+    }
     const style = getComputedStyle(element);
     const kids = request.layout || request.type !== 'TEXT' ? children(element, style) : [];
     return {
+      sectionBox,
+      shapes: element.tagName === 'IMG' && request.type !== 'TEXT' ? await svgShapes(element) : null,
       tag: element.tagName.toLowerCase(),
       svg: element instanceof SVGElement,
       text: transformText((element.textContent ?? '').trim().replace(/\s+/g, ' '), style.textTransform),
@@ -175,7 +243,7 @@ export function readDom(requests) {
       childSides: kids.sides ?? [],
       style: Object.fromEntries(KEYS.map((key) => [key, style[key]])),
     };
-  });
+  }));
 }
 
 const LINEAR = (v) => {
@@ -223,6 +291,20 @@ function parseShadows(value) {
 }
 const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
 
+/**
+ * Where a node sits, for what Figma places by hand (outside Auto Layout: a floating button, a caption on a
+ * photo); a child in Auto Layout is placed by its gap and padding, checked on its parent. Down from its
+ * section's top, so a section that moved as a whole is not counted again; across from the frame's edge (a
+ * region's own edge), as the element of a band may be narrower than the band.
+ */
+function position(node, dom, add) {
+  if (!dom.sectionBox || !node.place || node.flow) return;
+  const region = 'left' in node.place.section;
+  const x = dom.box.left - (region ? dom.sectionBox.left : 0) - (node.x - (region ? node.place.section.left : 0));
+  const y = dom.box.top - dom.sectionBox.top - (node.y - node.place.section.top);
+  if (!near(x, 0, SIZE) || !near(y, 0, SIZE)) add('position', `${round(node.x)}, ${round(node.y)}`, `${round(node.x + x)}, ${round(node.y + y)}`);
+}
+
 /** The style differences of one Figma node and its element: [{property, figma, dom}]. */
 function differences(node, dom) {
   const off = [];
@@ -231,6 +313,23 @@ function differences(node, dom) {
   const fills = node.fills ?? [];
   const solid = fills.find((fill) => fill.type === 'SOLID');
   const opacity = node.effectiveOpacity ?? node.opacity ?? 1;
+  if (dom.hidden) {
+    add('shown', 'yes', 'hidden');
+    return off;
+  }
+  if (dom.pseudo) {
+    // Drawn by ::before or ::after: its size, fill, radius and opacity as computed (no box to place).
+    const w = parseFloat(s.width);
+    const h = parseFloat(s.height);
+    if (Number.isFinite(w) && Number.isFinite(h) && !(near(w, node.width, SIZE) && near(h, node.height, SIZE))) {
+      add('size', `${round(node.width)}×${round(node.height)}`, `${round(w)}×${round(h)}`);
+    }
+    if (solid && !sameColor(solid.color, solid.opacity, parseColor(s.backgroundColor))) {
+      add('background', showColor(solid.color, solid.opacity), showDom(parseColor(s.backgroundColor)));
+    }
+    if (!near(dom.opacity, opacity, ALPHA)) add('opacity', opacity, round(dom.opacity));
+    return off;
+  }
 
   if (node.type === 'TEXT') {
     if (node.fontFamily) {
@@ -266,6 +365,7 @@ function differences(node, dom) {
       const got = color ? { ...color, alpha: color.alpha * dom.opacity } : null;
       if (!sameColor(solid.color, solid.opacity * opacity, got)) add('color', showColor(solid.color, solid.opacity * opacity), showDom(got));
     }
+    position(node, dom, add);
     return off;
   }
 
@@ -277,6 +377,7 @@ function differences(node, dom) {
   const sized = (sizingX !== 'FIXED' || near(width, node.width, SIZE)) && (sizingY !== 'FIXED' || near(height, node.height, SIZE));
   if (!sized) add('size', `${round(node.width)}×${round(node.height)}`, `${round(width)}×${round(height)}`);
   if (!near(dom.opacity, opacity, ALPHA)) add('opacity', opacity, round(dom.opacity));
+  position(node, dom, add);
   if (dom.svg) return off; // an SVG's own shapes are drawn with fill and stroke, not the box properties below
 
   if (solid) {
@@ -308,7 +409,9 @@ function differences(node, dom) {
     if (domRadii.some((r) => cap(r, width, height) < Math.min(width, height) / 2 - PX) && s.clipPath === 'none') {
       add('radius', 'ellipse', domRadii.map((r) => round(cap(r, width, height))).join(' '));
     }
-  } else if (node.radius != null && !(node.cornerSmoothing > 0 && s.clipPath !== 'none')) {
+  } else if (node.cornerSmoothing > 0 && s.clipPath === 'none') {
+    add('corner smoothing', `${Math.round(node.cornerSmoothing * 100)} %`, 'none');
+  } else if (node.radius != null && !(node.cornerSmoothing > 0)) {
     const figmaRadii = Array.isArray(node.radius) ? node.radius : [node.radius, node.radius, node.radius, node.radius];
     const want = figmaRadii.map((r) => round(cap(r, node.width, node.height)));
     const got = domRadii.map((r) => round(cap(r, width, height)));
@@ -334,18 +437,35 @@ function differences(node, dom) {
     const dashed = Boolean(node.dashPattern?.length);
     if (weights.every((w) => w === weights[0])) {
       const w = weights[0];
+      // Where each drawing sits against the box: a border inside it (outside when the box grew by it), an inset
+      // ring inside, an outer ring outside, an outline by its offset, an inset and an outer ring together centred.
+      const offset = parseFloat(s.outlineOffset) || 0;
+      const grown = near(width, node.width + 2 * w, SIZE) && near(height, node.height + 2 * w, SIZE);
       const options = [
-        border.every((b) => b.style !== 'none' && near(b.width, w, PX)) && { color: border[0].color, style: border[0].style },
-        s.outlineStyle !== 'none' && near(parseFloat(s.outlineWidth), w, PX) && { color: parseColor(s.outlineColor), style: s.outlineStyle },
-        ...rings.filter((ring) => near(ring.spread, w, PX)).map((ring) => ({ color: ring.color, style: 'solid' })),
+        border.every((b) => b.style !== 'none' && near(b.width, w, PX)) && { color: border[0].color, style: border[0].style, align: grown ? 'OUTSIDE' : 'INSIDE' },
+        s.outlineStyle !== 'none' &&
+          near(parseFloat(s.outlineWidth), w, PX) && {
+            color: parseColor(s.outlineColor),
+            style: s.outlineStyle,
+            align: near(offset, -w, PX) ? 'INSIDE' : near(offset, -w / 2, PX) ? 'CENTER' : offset > -PX ? 'OUTSIDE' : 'INSIDE',
+          },
+        ...rings.filter((ring) => near(ring.spread, w, PX)).map((ring) => ({ color: ring.color, style: 'solid', align: ring.inset ? 'INSIDE' : 'OUTSIDE' })),
         ...rings.flatMap((a, i) =>
-          rings.slice(i + 1).filter((b) => a.inset !== b.inset && near(a.spread + b.spread, w, PX)).map(() => ({ color: a.color, style: 'solid' })),
+          rings
+            .slice(i + 1)
+            .filter((b) => a.inset !== b.inset && near(a.spread + b.spread, w, PX))
+            .map(() => ({ color: a.color, style: 'solid', align: 'CENTER' })),
         ),
       ].filter(Boolean);
-      const found = options.find((option) => sameColor(stroke.color, alpha, option.color)) ?? options[0] ?? null;
+      const found =
+        options.find((option) => sameColor(stroke.color, alpha, option.color) && option.align === node.strokeAlign) ??
+        options.find((option) => sameColor(stroke.color, alpha, option.color)) ??
+        options[0] ??
+        null;
       if (!found) add('stroke', `${w} px ${showColor(stroke.color, alpha)}`, 'none');
       else if (!sameColor(stroke.color, alpha, found.color)) add('stroke', `${w} px ${showColor(stroke.color, alpha)}`, `${w} px ${showDom(found.color)}`);
       else if (dashed && !['dashed', 'dotted'].includes(found.style)) add('stroke style', 'dashed', found.style);
+      else if (node.strokeAlign && found.align !== node.strokeAlign) add('stroke align', node.strokeAlign.toLowerCase(), found.align.toLowerCase());
     } else {
       weights.forEach((w, i) => {
         if (!w) return;
@@ -361,6 +481,9 @@ function differences(node, dom) {
 
   // Shadows and blurs: Figma's blur radius is 2σ, CSS blur() takes σ.
   const soft = shadows.filter((shadow) => !rings.includes(shadow));
+  if (soft.length && !(node.effects ?? []).some((effect) => effect.type.endsWith('SHADOW'))) {
+    add('shadow', 'none', soft.map((sh) => `${sh.inset ? 'inset ' : ''}${sh.x} ${sh.y} ${sh.blur} ${sh.spread} ${showDom(sh.color)}`).join(', '));
+  }
   for (const effect of node.effects ?? []) {
     if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
       const inset = effect.type === 'INNER_SHADOW';
@@ -443,6 +566,33 @@ function differences(node, dom) {
   return off;
 }
 
+/** A colour as an SVG file writes it (#abc, #aabbcc, rgb()), as {rgb, alpha}; none, currentColor and names as null. */
+function svgColor(value) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((value ?? '').trim())?.[1];
+  if (hex) return { rgb: fromHex(`#${hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex}`), alpha: 1 };
+  return parseColor(value);
+}
+
+/** A vector's stroke and fill against the shapes of the SVG file its frame is drawn from. */
+function iconDifferences(node, shapes) {
+  const off = [];
+  const stroke = (node.strokes ?? []).find((paint) => paint.type === 'SOLID');
+  const weight = node.strokeWeights?.[0];
+  if (stroke && weight) {
+    const drawn = shapes.filter((shape) => svgColor(shape.stroke));
+    if (!drawn.some((shape) => sameColor(stroke.color, stroke.opacity, svgColor(shape.stroke)) && near(shape.strokeWidth, weight, 0.3))) {
+      const got = [...new Set(drawn.map((shape) => `${round(shape.strokeWidth)} px ${showDom(svgColor(shape.stroke))}`))];
+      off.push({ property: 'icon stroke', figma: `${weight} px ${showColor(stroke.color, stroke.opacity)}`, dom: got.join(', ') || 'none' });
+    }
+  }
+  const fill = (node.fills ?? []).find((paint) => paint.type === 'SOLID');
+  if (fill && !shapes.some((shape) => sameColor(fill.color, fill.opacity, svgColor(shape.fill)))) {
+    const got = [...new Set(shapes.map((shape) => svgColor(shape.fill)).filter(Boolean).map(showDom))];
+    off.push({ property: 'icon fill', figma: showColor(fill.color, fill.opacity), dom: got.join(', ') || 'none' });
+  }
+  return off;
+}
+
 /**
  * Per section: how many nodes were checked, what differs, and how many Figma nodes have no element
  * (texts not found are listed: a changed or missing text; other nodes just lack a data-node-id).
@@ -450,10 +600,23 @@ function differences(node, dom) {
 export function compareStyles(nodes, doms) {
   const sections = new Map();
   const missingText = [];
+  // Vectors inside an SVG shown with <img>: compared with the file's shapes, through the frame that holds them.
+  const icons = nodes.map((node, i) => ({ node, dom: doms[i] })).filter(({ node, dom }) => dom?.shapes?.length && node.type !== 'TEXT');
+  const holds = (outer, inner) =>
+    inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
+  const iconOf = (node) =>
+    icons.filter(({ node: frame }) => frame !== node && holds(frame, node)).sort((a, b) => a.node.width * a.node.height - b.node.width * b.node.height)[0];
   nodes.forEach((node, i) => {
     const entry = sections.get(node.place.index) ?? { checked: 0, off: [], unmatched: 0 };
     sections.set(node.place.index, entry);
     const dom = doms[i];
+    const icon = !dom && node.type !== 'TEXT' ? iconOf(node) : null;
+    if (icon) {
+      entry.checked++;
+      const label = `${node.name} ${node.id} in ${icon.node.name}`;
+      for (const difference of iconDifferences(node, icon.dom.shapes)) entry.off.push({ node: node.id, label, ...difference });
+      return;
+    }
     if (!dom) {
       if (node.type === 'TEXT') missingText.push({ section: node.place.index, node: node.id, text: node.characters });
       else entry.unmatched++;

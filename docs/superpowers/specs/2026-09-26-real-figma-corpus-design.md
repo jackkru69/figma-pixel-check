@@ -107,3 +107,9 @@ child's divider, one-sided strokes, CENTER strokes, hugging sizes) were fixed. 3
 difference on the corpus, and detection went from 110 to 157 of 167: text colour 11/11, font weight 11/12,
 radius 12/12, opacity 10/10. Two real structure differences were found and fixed in the corpus (a section
 without its own padding, a table header fill on the cells). Sections also gained regions (`left`, `width`).
+
+Third pass: positions of what Figma places by hand, hidden elements, stroke alignment, shadows the design
+does not have, corner smoothing, icon strokes and fills inside `<img>` SVGs (read from the file), and
+pseudo-elements (`data-node-id-before/after`). 371 nodes compared on the corpus with no difference; the
+benchmark detects 168 of 168. That is an upper bound on a corpus built with the tool; the next level of
+trust is designs and builds the tool has never seen.

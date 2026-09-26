@@ -50,6 +50,7 @@ const walk = (node, parentOpacity) => {
     fills: 'fills' in node ? paints(mixed(node.fills)) : null,
   };
   if ('layoutSizingHorizontal' in node) entry.sizing = [node.layoutSizingHorizontal, node.layoutSizingVertical];
+  if (node.layoutPositioning === 'ABSOLUTE') entry.layoutPositioning = 'ABSOLUTE';
   if (node.type === 'TEXT') {
     Object.assign(entry, {
       characters: node.characters,

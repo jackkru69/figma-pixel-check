@@ -9,35 +9,24 @@ signal only in other sections. **Missed**: nothing. Invalid mutations (the captu
 
 | Kind | Valid | Detected | by geometry | by spacing | by pixels | by colour | by values | Weak | Misattributed | Missed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| border-vs-inset | 7 | 6 | 5 | 2 | 5 | 0 | 5 | 1 | 0 | 0 |
+| border-vs-inset | 7 | 7 | 5 | 2 | 5 | 0 | 6 | 0 | 0 | 0 |
 | fill-color | 15 | 15 | 0 | 1 | 0 | 12 | 12 | 0 | 0 | 0 |
 | font-size | 11 | 11 | 0 | 3 | 9 | 0 | 11 | 0 | 0 | 0 |
-| font-weight | 12 | 11 | 0 | 1 | 2 | 0 | 11 | 0 | 1 | 0 |
+| font-weight | 12 | 12 | 0 | 1 | 2 | 0 | 11 | 0 | 0 | 0 |
 | gap | 13 | 13 | 5 | 11 | 9 | 5 | 10 | 0 | 0 | 0 |
 | height | 11 | 11 | 11 | 10 | 8 | 4 | 11 | 0 | 0 | 0 |
 | icon-size | 6 | 6 | 3 | 3 | 4 | 0 | 6 | 0 | 0 | 0 |
 | letter-spacing | 10 | 10 | 0 | 2 | 5 | 0 | 10 | 0 | 0 | 0 |
 | line-height | 6 | 6 | 6 | 3 | 5 | 0 | 5 | 0 | 0 | 0 |
 | margin | 12 | 12 | 6 | 9 | 8 | 3 | 10 | 0 | 0 | 0 |
-| missing | 12 | 9 | 2 | 9 | 1 | 2 | 7 | 2 | 1 | 0 |
+| missing | 12 | 12 | 3 | 9 | 1 | 2 | 10 | 0 | 0 | 0 |
 | opacity | 10 | 10 | 0 | 0 | 0 | 5 | 10 | 0 | 0 | 0 |
-| radius | 12 | 11 | 0 | 0 | 0 | 1 | 11 | 0 | 0 | 1 |
-| shadow | 6 | 5 | 0 | 3 | 0 | 4 | 5 | 1 | 0 | 0 |
-| shift | 10 | 7 | 0 | 0 | 4 | 0 | 7 | 3 | 0 | 0 |
+| radius | 12 | 12 | 0 | 0 | 0 | 1 | 12 | 0 | 0 | 0 |
+| shadow | 6 | 6 | 0 | 3 | 0 | 4 | 6 | 0 | 0 | 0 |
+| shift | 10 | 10 | 0 | 0 | 4 | 0 | 10 | 0 | 0 | 0 |
 | text-color | 11 | 11 | 0 | 0 | 0 | 0 | 11 | 0 | 0 | 0 |
-| wrap | 3 | 3 | 2 | 2 | 1 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 167 | 157 | 40 | 59 | 61 | 36 | 142 | 7 | 2 | 1 |
+| wrap | 4 | 4 | 3 | 3 | 1 | 0 | 1 | 0 | 0 | 0 |
+| **all** | 168 | 168 | 42 | 60 | 61 | 36 | 152 | 0 | 0 | 0 |
 
 ## Not detected
 
-- **weak** torture/effects / glass — missing: background blur 12 dropped: the yellow blob shows through the glass card with a hard edge `.glass-card { backdrop-filter: none !important; }` — glass: colour +0.28 pp #FCD383 → #FED881 · glass-card: glass-card 2:73 backdrop blur 6 → 0; colour +0.74 pp #FCD383 → #FED881
-- **misattributed** torture/effects / glass — font-weight: glass label Semi Bold 600 -> Medium 500 (the weight of the other labels) `.label--glass { font-weight: 500 !important; }` — glass-card: «Glass · background blur 12» font-weight 600 → 500
-- **weak** torture/icons / icon-buttons — shadow: shadow-md copied from the button component; the design's icon buttons have no shadow `.icon-button--solid { box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06) !important; }` — icon-buttons: changed below the flag: bottom
-- **missed** torture/radii / smoothing — radius: corner smoothing 60 % dropped: the squircle tile is a plain border-radius 24 like its neighbour `.tile--smooth { clip-path: none !important; border-radius: 24px !important; }`
-- **weak** torture/radii / clip — border-vs-inset: the dot's 2 px outside stroke written as a border: it eats into the 48 px disc instead of ringing it `.mask__dot { box-shadow: none !important; border: 2px solid #fff !important; }` — clip: mismatch +0.43 pp
-- **weak** torture/radii / clip — shift: gradient dot 2 px right of its place inside the mask `.mask__dot { left: 152px !important; }` — clip: mismatch +0.32 pp
-- **weak** torture/screen / balance — missing: The masked card number «•••• 4821» is not rendered (e.g. the field is null in the preview data). `.balance__card { display: none !important; }` — balance: mismatch +0.19 pp
-- **weak** torture/screen / fab — shift: Floating button 2 px to the left: right offset 20 → 22 px. `.fab { right: 22px !important; }` — fab: mismatch +0.75 pp; changed below the flag: left, right
-- **weak** torture/transparent / overlay — shift: Caption anchored 16 px from the photo bottom instead of 14: 2 px higher. `.photo__caption { bottom: 16px !important; }` — overlay: mismatch +0.49 pp
-- **invalid** torture/type / footnote — wrap: The Figma text layer's width (263 px) copied as a fixed width: Chromium sets the line about 2 px wider, so "line" wraps to a second line and the band grows by 18 px. `.footnote { width: 263px !important; }`
-- **misattributed** torture/type / overline — missing: The overline row was not built. `[data-section="overline"] { display: none !important; }` — auto-lh: Δ top 0→-37, Δ height 0→0

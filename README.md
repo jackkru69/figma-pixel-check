@@ -122,7 +122,8 @@ skill's own loop. They run in CI as regression fixtures, and `npm run bench` inj
 into them to measure what the checks catch ([`corpus/BENCHMARK.md`](corpus/BENCHMARK.md)). Building them
 found the colour blind spot, text rendered unlike Figma on Linux, and responsive checks that missed clipped
 text and floating buttons, and showed where pixels stop: font weight, text colour and radius. With the fixes
-and the style check, detection went from 84 to 157 of 167.
+and the style check, detection went from 84 of 167 to all 168. The corpus was built together with the
+checks, so that says no known blind spot is left, not what share of mistakes other designs would show.
 
 ## Limits
 

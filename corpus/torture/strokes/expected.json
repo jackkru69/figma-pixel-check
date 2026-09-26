@@ -1,0 +1,35 @@
+{
+  "sections": {
+    "inside": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.07,
+      "color": 0
+    },
+    "center": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.26,
+      "color": 0
+    },
+    "outside": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.3,
+      "color": 0
+    },
+    "dashed": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.02,
+      "color": 0
+    },
+    "thick": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.42,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

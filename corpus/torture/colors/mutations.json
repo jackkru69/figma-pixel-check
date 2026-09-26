@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "gap",
+    "section": "grays",
+    "css": ".swatches { justify-content: flex-start !important; gap: 8px !important; }",
+    "note": "The fractional 9.4 px spacing rounded to the 8 px spacing token: the row ends 7 px short of the right padding."
+  },
+  {
+    "kind": "margin",
+    "section": "gradient-linear",
+    "css": "[data-section=\"gradient-linear\"] { padding-block: 20px !important; }",
+    "note": "Card band built with 20 px vertical padding (py-5) instead of 16: the band is 8 px taller, the card 4 px lower."
+  },
+  {
+    "kind": "height",
+    "section": "brand",
+    "css": ".button { height: 44px !important; }",
+    "note": "The md button size (44) used instead of lg (48)."
+  },
+  {
+    "kind": "font-size",
+    "section": "text-colors",
+    "css": ".text-colors { font-size: 14px !important; }",
+    "note": "text-sm (14) instead of the design's 15 px."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "text-colors",
+    "css": ".text-colors { letter-spacing: 0.2px !important; }",
+    "note": "Tracking copied from another text style: lines about 4 px wider."
+  },
+  {
+    "kind": "font-weight",
+    "section": "brand",
+    "css": ".button { font-weight: 500 !important; }",
+    "note": "Button label in Medium instead of Semi Bold."
+  },
+  {
+    "kind": "text-color",
+    "section": "text-colors",
+    "css": ".text-tertiary { color: #475467 !important; }",
+    "note": "Tertiary text given the secondary token (#667085 -> #475467), one step darker."
+  },
+  {
+    "kind": "fill-color",
+    "section": "brand",
+    "css": ".button--primary { background: #9e77ed !important; }",
+    "note": "brand-500 instead of brand-600 on the primary button (#7F56D9 -> #9E77ED)."
+  },
+  {
+    "kind": "fill-color",
+    "section": "gradient-linear",
+    "css": ".gradient--linear { background: linear-gradient(135deg, #7f56d9, #ee46bc) !important; }",
+    "note": "Figma's 135 degrees typed as a CSS angle: on a 335 x 80 box the design's gradient is 166.57deg with stops at 14.6 / 85.4 %, so the top edge turns pinker and the bottom edge more violet."
+  },
+  {
+    "kind": "radius",
+    "section": "near",
+    "css": ".tile { border-radius: 8px !important; }",
+    "note": "radius-md (12) replaced with radius-sm (8) on the two gray tiles."
+  },
+  {
+    "kind": "shadow",
+    "section": "brand",
+    "css": ".button--primary { box-shadow: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03) !important; }",
+    "note": "shadow-lg instead of shadow-xs under the button."
+  },
+  {
+    "kind": "missing",
+    "section": "grays",
+    "css": ".swatch:nth-child(3) { background: transparent !important; }",
+    "note": "The third swatch's token is misspelt (var(--gray-300) undefined), so it paints nothing: a hole in the gray scale."
+  },
+  {
+    "kind": "opacity",
+    "section": "grays",
+    "css": ".swatch { opacity: 0.8 !important; }",
+    "note": "A layer opacity of 80 % applied to the swatches (e.g. from a disabled-state style): every gray one step lighter."
+  },
+  {
+    "kind": "shift",
+    "section": "near",
+    "css": ".tiles { padding-left: 22px !important; padding-right: 18px !important; }",
+    "note": "An optical nudge: the tile row moved 2 px to the right."
+  }
+]

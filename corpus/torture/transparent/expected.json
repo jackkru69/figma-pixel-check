@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "overlay": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.56,
+      "color": 0
+    },
+    "opacity": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.45,
+      "color": 0.16
+    },
+    "text-alpha": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 1.28,
+      "color": 0
+    }
+  },
+  "spacingFlags": {
+    "opacity": [
+      "right"
+    ]
+  }
+}

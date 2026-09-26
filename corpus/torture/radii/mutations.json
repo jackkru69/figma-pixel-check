@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "radius",
+    "section": "radius-scale",
+    "css": ".swatch--16 { border-radius: 12px !important; }",
+    "note": "the 16 px swatch uses the radius-md token (12) instead of radius-lg (16)"
+  },
+  {
+    "kind": "radius",
+    "section": "sheet-top",
+    "css": ".sheet { border-radius: 20px 20px 0 0 !important; }",
+    "note": "bottom sheet uses the 20 px card radius instead of the sheet's 24 px"
+  },
+  {
+    "kind": "radius",
+    "section": "smoothing",
+    "css": ".tile--smooth { clip-path: none !important; border-radius: 24px !important; }",
+    "note": "corner smoothing 60 % dropped: the squircle tile is a plain border-radius 24 like its neighbour"
+  },
+  {
+    "kind": "fill-color",
+    "section": "sheet-top",
+    "css": ".sheet-top { background: #475467 !important; }",
+    "note": "scrim uses gray-600 (#475467) instead of gray-500 (#667085)"
+  },
+  {
+    "kind": "fill-color",
+    "section": "clip",
+    "css": ".mask { background: #fffaeb !important; }",
+    "note": "mask frame fill uses warning-50 (#FFFAEB) instead of warning-100 (#FEF0C7)"
+  },
+  {
+    "kind": "text-color",
+    "section": "radius-scale",
+    "css": ".pill { color: #7f56d9 !important; }",
+    "note": "pill label uses brand-600 (#7F56D9) instead of brand-700 (#6941C6)"
+  },
+  {
+    "kind": "gap",
+    "section": "radius-scale",
+    "css": ".scale { gap: 8px !important; }",
+    "note": "swatch row gap 8 instead of 12"
+  },
+  {
+    "kind": "margin",
+    "section": "sheet-top",
+    "css": ".sheet-top { padding-top: 20px !important; }",
+    "note": "scrim above the sheet 20 px instead of 24 px"
+  },
+  {
+    "kind": "font-size",
+    "section": "sheet-top",
+    "css": ".sheet__title { font-size: 16px !important; }",
+    "note": "sheet title at 16 px instead of 17 px"
+  },
+  {
+    "kind": "font-weight",
+    "section": "sheet-top",
+    "css": ".sheet__title { font-weight: 700 !important; }",
+    "note": "sheet title Bold instead of Semi Bold"
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "clip",
+    "css": ".mask__dot { box-shadow: none !important; border: 2px solid #fff !important; }",
+    "note": "the dot's 2 px outside stroke written as a border: it eats into the 48 px disc instead of ringing it"
+  },
+  {
+    "kind": "shift",
+    "section": "clip",
+    "css": ".mask__dot { left: 152px !important; }",
+    "note": "gradient dot 2 px right of its place inside the mask"
+  },
+  {
+    "kind": "missing",
+    "section": "sheet-top",
+    "css": ".sheet__handle { display: none !important; }",
+    "note": "grab handle of the bottom sheet left out"
+  },
+  {
+    "kind": "opacity",
+    "section": "sheet-top",
+    "css": ".sheet-top { background: rgb(16 24 40 / 0.6) !important; }",
+    "note": "scrim written as gray-900 at 60 % over the page instead of the flat #667085 the design draws"
+  }
+]

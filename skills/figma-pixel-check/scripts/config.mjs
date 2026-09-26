@@ -16,6 +16,11 @@ export const DEFAULTS = {
   url: '/preview/{id}',
   // pixelmatch threshold: Figma and Chromium antialias text differently, 0.1 lights up every glyph.
   threshold: 0.25,
+  // Chromium flags for every capture. These two draw text as Figma does, greyscale and at fractional glyph
+  // positions, whatever the machine's font settings: against Figma's renders it about halved the mismatch
+  // (corpus/), and it makes CI and a laptop agree.
+  // A list in the config replaces this one: repeat these two when adding a flag.
+  chromiumArgs: ['--font-render-hinting=none', '--disable-lcd-text'],
   // Extra CSS applied during capture, e.g. the iOS status bar drawn in the frames: ":root { --safe-top: 53px; }".
   captureCss: '',
   // The spacing audit flags differences of at least this many pixels.
@@ -44,5 +49,9 @@ export function loadConfig(args = process.argv.slice(2)) {
   if (unknown.length > 0) {
     throw new Error(`Unknown keys in ${file}: ${unknown.join(', ')}. Known: ${Object.keys(DEFAULTS).join(', ')}`);
   }
-  return { ...DEFAULTS, ...user };
+  const config = { ...DEFAULTS, ...user };
+  if (!Array.isArray(config.chromiumArgs) || !config.chromiumArgs.every((arg) => typeof arg === 'string')) {
+    throw new Error(`${file}: chromiumArgs must be a list of strings (it replaces the defaults: ${DEFAULTS.chromiumArgs.join(' ')})`);
+  }
+  return config;
 }

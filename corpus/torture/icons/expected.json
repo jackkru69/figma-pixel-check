@@ -1,0 +1,41 @@
+{
+  "sections": {
+    "stroke-16": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.01,
+      "color": 0
+    },
+    "stroke-20": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "stroke-24": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "stroke-32": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "filled": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "icon-buttons": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

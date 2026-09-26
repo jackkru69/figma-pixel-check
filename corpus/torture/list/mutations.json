@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "rows",
+    "css": ".row { height: 60px !important; }",
+    "note": "settings rows built on the 60 px list-item token instead of the design's 56 px; the band grows by 16 px"
+  },
+  {
+    "kind": "gap",
+    "section": "chips",
+    "css": ".chips { gap: 12px !important; }",
+    "note": "chip track uses the 12 px spacing token instead of 8 px between chips"
+  },
+  {
+    "kind": "margin",
+    "section": "header",
+    "css": ".group-title { padding-left: 16px !important; }",
+    "note": "group title takes the 16 px row padding-right value as its side padding; the design has 20 px"
+  },
+  {
+    "kind": "font-size",
+    "section": "rows",
+    "css": ".row-title { font-size: 17px !important; }",
+    "note": "row titles set in the 17 px body style instead of 16 px medium"
+  },
+  {
+    "kind": "line-height",
+    "section": "full-divider",
+    "css": ".account-note { line-height: 24px !important; }",
+    "note": "note inherits the 24 px line height of the row titles instead of 20 px; the band grows by 4 px"
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "header",
+    "css": ".group-title { letter-spacing: 0 !important; }",
+    "note": "the +4 % tracking of the ACCOUNT overline is dropped"
+  },
+  {
+    "kind": "font-weight",
+    "section": "chips",
+    "css": ".chip { font-weight: 600 !important; }",
+    "note": "chip labels semibold instead of medium"
+  },
+  {
+    "kind": "text-color",
+    "section": "rows",
+    "css": ".row-value { color: #475467 !important; }",
+    "note": "row values (On, 2 cards, English) use gray-600 #475467 instead of gray-500 #667085"
+  },
+  {
+    "kind": "fill-color",
+    "section": "chips",
+    "css": ".chip:not(.is-active) { background: #EAECF0 !important; }",
+    "note": "inactive chips filled with gray-200 #EAECF0 instead of gray-100 #F2F4F7"
+  },
+  {
+    "kind": "radius",
+    "section": "chips",
+    "css": ".chip { border-radius: 8px !important; }",
+    "note": "chips use the 8 px card radius instead of the 18 px pill radius"
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "rows",
+    "css": ".settings li + li::before { display: none !important; } .settings li + li .row { border-top: 1px solid #EAECF0; }",
+    "note": "dividers drawn as border-top on the 56 px row: they become full-bleed instead of inset from x 56, and each row loses 1 px (band 224 instead of 227)"
+  },
+  {
+    "kind": "icon-size",
+    "section": "rows",
+    "css": ".row-icon { width: 20px !important; height: 20px !important; }",
+    "note": "leading icons at 20 px (the chevron size) instead of 24 px"
+  },
+  {
+    "kind": "missing",
+    "section": "rows",
+    "css": ".settings li + li::before { background: transparent !important; }",
+    "note": "divider colour token misspelled (var(--grey-200)), so the three inset dividers are not painted; the 1 px gaps stay"
+  },
+  {
+    "kind": "opacity",
+    "section": "rows",
+    "css": ".row-chevron { opacity: 0.5 !important; }",
+    "note": "chevrons exported with a 50 % layer opacity on top of the #98A2B3 stroke, so they render much lighter"
+  }
+]

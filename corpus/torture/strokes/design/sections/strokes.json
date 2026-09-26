@@ -1,0 +1,33 @@
+{
+  "node": "2:2",
+  "reference": "strokes-375.png",
+  "width": 375,
+  "height": 480,
+  "sections": [
+    {
+      "name": "inside",
+      "top": 0,
+      "height": 96
+    },
+    {
+      "name": "center",
+      "top": 96,
+      "height": 96
+    },
+    {
+      "name": "outside",
+      "top": 192,
+      "height": 96
+    },
+    {
+      "name": "dashed",
+      "top": 288,
+      "height": 96
+    },
+    {
+      "name": "thick",
+      "top": 384,
+      "height": 96
+    }
+  ]
+}

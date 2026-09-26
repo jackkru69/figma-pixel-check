@@ -1,0 +1,72 @@
+{
+  "node": "2:18",
+  "reference": "type-375.png",
+  "width": 375,
+  "height": 575,
+  "sections": [
+    {
+      "name": "display",
+      "top": 0,
+      "height": 65
+    },
+    {
+      "name": "title",
+      "top": 65,
+      "height": 58
+    },
+    {
+      "name": "headline",
+      "top": 123,
+      "height": 52
+    },
+    {
+      "name": "body",
+      "top": 175,
+      "height": 46
+    },
+    {
+      "name": "callout",
+      "top": 221,
+      "height": 45
+    },
+    {
+      "name": "subhead",
+      "top": 266,
+      "height": 44
+    },
+    {
+      "name": "footnote",
+      "top": 310,
+      "height": 42
+    },
+    {
+      "name": "caption",
+      "top": 352,
+      "height": 40
+    },
+    {
+      "name": "overline",
+      "top": 392,
+      "height": 37,
+      "reason": "text 1 px higher: 11/13 px, Blink floors the half-leading ((13-14)/2 = -0.5 -> -1), Figma puts the baseline at 10.5"
+    },
+    {
+      "name": "auto-lh",
+      "top": 429,
+      "height": 45,
+      "reason": "text 1 px higher: 17/21 px (Figma AUTO), Blink floors the 0.5 px half-leading, Figma baseline 16.68"
+    },
+    {
+      "name": "percent-lh",
+      "top": 474,
+      "height": 47,
+      "reason": "text 1 px higher: 15 px at 150 % (22.5 px), Blink floors the 1.75 px half-leading, Figma baseline 16.71"
+    },
+    {
+      "name": "tight",
+      "top": 521,
+      "height": 54,
+      "reason": "text 1 px higher: 24/30 px, Blink floors the 0.5 px half-leading, Figma baseline 23.73"
+    }
+  ]
+}

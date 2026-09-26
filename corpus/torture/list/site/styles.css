@@ -1,0 +1,131 @@
+:root {
+  --gray-50: #f2f4f7;
+  --gray-200: #eaecf0;
+  --gray-500: #667085;
+  --gray-700: #344054;
+  --gray-900: #101828;
+  --white: #fff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--white);
+  color: var(--gray-900);
+  font-family: Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.screen {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* ACCOUNT: 12 / 16 semibold, +4 % tracking */
+.group-title {
+  padding: 24px 20px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+/* Settings rows: 56 px, inset 1 px dividers from x 56 between them */
+.settings {
+  list-style: none;
+}
+
+.settings li + li::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin-left: 56px;
+  background: var(--gray-200);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px 0 20px;
+}
+
+.row-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.row-title {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.row-value {
+  flex: none;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.row-chevron {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* Chip track: scrolls horizontally, clipped by the screen */
+.chips {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: var(--gray-50);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--gray-700);
+  white-space: nowrap;
+}
+
+.chip.is-active {
+  background: var(--gray-900);
+  color: var(--white);
+}
+
+/* Full-bleed divider above the note */
+.account-note {
+  border-top: 1px solid var(--gray-200);
+  padding: 16px 20px 20px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--gray-500);
+}

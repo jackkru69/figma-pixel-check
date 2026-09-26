@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "callout",
+    "css": "[data-section=\"callout\"] { padding-bottom: 16px !important; }",
+    "note": "Band built with pt-3 pb-4 (12 / 16) instead of 12 / 12: the callout band is 4 px taller, everything below moves down 4 px."
+  },
+  {
+    "kind": "margin",
+    "section": "footnote",
+    "css": "[data-section=\"footnote\"] { padding-left: 16px !important; }",
+    "note": "px-4 (16) instead of the design's 20 px side padding on one band: the footnote line starts 4 px left of the others."
+  },
+  {
+    "kind": "gap",
+    "section": "title",
+    "css": ".type-scale { row-gap: 4px !important; }",
+    "note": "The list is wrapped in the project's Stack component with its default gap-1 (4 px); Figma's bands have no gap, so every band from title down starts 4 px lower than the previous one ends."
+  },
+  {
+    "kind": "font-size",
+    "section": "subhead",
+    "css": ".subhead { font-size: 16px !important; }",
+    "note": "The 16 px body token used for the 15 px subhead (line height kept at 20): the line is about 16 px longer."
+  },
+  {
+    "kind": "line-height",
+    "section": "callout",
+    "css": ".callout { line-height: 20px !important; }",
+    "note": "leading-5 (20 px) instead of the design's 21 px for 16 px callout: the band is 1 px shorter."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "caption",
+    "css": ".caption { letter-spacing: 0 !important; }",
+    "note": "The caption's +0.4 px tracking dropped (tracking-normal): the line is about 17 px shorter."
+  },
+  {
+    "kind": "font-weight",
+    "section": "callout",
+    "css": ".callout { font-weight: 400 !important; }",
+    "note": "Medium (500) callout set in Regular (400), the neighbouring weight."
+  },
+  {
+    "kind": "font-weight",
+    "section": "title",
+    "css": ".title { font-weight: 700 !important; }",
+    "note": "Semi Bold (600) title set in Bold (700), the neighbouring weight."
+  },
+  {
+    "kind": "text-color",
+    "section": "footnote",
+    "css": ".footnote { color: #475467 !important; }",
+    "note": "Tertiary text token #667085 replaced by the neighbouring secondary token #475467."
+  },
+  {
+    "kind": "fill-color",
+    "section": "overline",
+    "css": "[data-section=\"overline\"] { background: #F2F4F7 !important; }",
+    "note": "The overline row given the gray-100 (#F2F4F7) surface of the app's list-section headers; the design's band is white."
+  },
+  {
+    "kind": "wrap",
+    "section": "footnote",
+    "css": ".footnote { width: 263px !important; }",
+    "note": "The Figma text layer's width (263 px) copied as a fixed width: Chromium sets the line about 2 px wider, so \"line\" wraps to a second line and the band grows by 18 px."
+  },
+  {
+    "kind": "missing",
+    "section": "overline",
+    "css": "[data-section=\"overline\"] { display: none !important; }",
+    "note": "The overline row was not built."
+  },
+  {
+    "kind": "shift",
+    "section": "tight",
+    "css": ".tight { position: relative; top: 2px; }",
+    "note": "Bold 24 line nudged 2 px down \"to centre it optically\" in its band; the band's size does not change."
+  },
+  {
+    "kind": "opacity",
+    "section": "percent-lh",
+    "css": ".percent-lh { opacity: 0.8; }",
+    "note": "The line built with the muted-text opacity-80 utility instead of the solid #101828 of the design."
+  }
+]

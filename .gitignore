@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+corpus/**/design/diff/
+corpus/**/design/SPACING-AUDIT.md
+corpus/**/.bench.config.json
+corpus/bench-results.json

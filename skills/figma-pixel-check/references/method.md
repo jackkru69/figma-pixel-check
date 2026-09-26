@@ -6,8 +6,9 @@
    the `dist` directory with a small static server (`serve-dist.mjs`, a free port, SPA fallback). A dev
    server is avoided on purpose: its tooling injects DOM and styles.
 2. For every `sections/<id>.json`, Chromium (Playwright) opens the screen's route in a viewport of exactly
-   the frame size with `deviceScaleFactor: 1`. Animations, transitions and the caret are frozen, and
-   `captureCss` is added. The capture CSS is served from the page's own origin, so a CSP with
+   the frame size with `deviceScaleFactor: 1`. It draws text as Figma does, greyscale and at fractional glyph
+   positions (`chromiumArgs`), whatever the machine's font settings, so a laptop and CI measure the same.
+   Animations, transitions and the caret are frozen, and `captureCss` is added. The capture CSS is served from the page's own origin, so a CSP with
    `style-src 'self'` stays enforced.
 3. After `networkidle`, fonts and images (at most 5 s for images; the ones still loading are printed), the
    page is captured, and the box of every rendered `[data-section]` element is read. An element that is not
@@ -15,8 +16,12 @@
    pixels by their edges, as Chromium paints them.
 4. Figma sections are matched to DOM sections **by name** (a repeated name matches its n-th occurrence).
    Each section is cropped from its own top in both images; the overlapping rows are compared with
-   `pixelmatch` (threshold `0.25`; transparent pixels of the reference count as white). The geometry of every
-   section is compared too: **Δ top** and **Δ height** (see [Reading the numbers](#reading-the-numbers)).
+   `pixelmatch` (threshold `0.25`; transparent pixels of the reference count as white). The threshold ignores
+   text rasterisation, and so it also ignores neighbouring colour tokens, light strokes, shadows and opacity:
+   a **colour check** covers those. It compares only pixels that are flat in both images (no edge next to
+   them, so no glyph edges and no anti-aliasing) in CIELAB, and counts those more than ΔE 3 apart. Raster
+   images, video and canvas are left out: a lossy re-encoding (WebP or JPEG at 75) shifts their colours. The
+   geometry of every section is compared too: **Δ top** and **Δ height** (see [Reading the numbers](#reading-the-numbers)).
 5. Console errors, page errors and CSP violations fail the run (exit code 1): a blocked stylesheet or
    script changes the page silently, and the numbers would be measured on the wrong page.
 
@@ -58,9 +63,9 @@ design/figma/
 - `url` (optional) overrides the route of this screen: several states of one screen, query parameters.
 - `node` (optional) is shown in the reports.
 - Sections do not have to cover the frame; gaps between bands are simply not compared.
-- `maxGeometry` (px) and `maxMismatch` (%) (optional) replace the `--max-geometry` / `--max-section` limits
-  for one section, stricter or looser, in runs that pass that flag; `reason` is printed with them in the
-  report. Use them for the differences recorded under "Kept on purpose", so CI keeps the tight limit
+- `maxGeometry` (px), `maxMismatch` (%) and `maxColor` (%) (optional) replace the `--max-geometry` /
+  `--max-section` / `--max-color` limits for one section, stricter or looser, in runs that pass that flag;
+  `reason` is printed with them in the report. Use them for the differences recorded under "Kept on purpose", so CI keeps the tight limit
   everywhere else.
 
 ## `figma-pixel.config.json`
@@ -74,6 +79,7 @@ design/figma/
 | `url`         | `"/preview/{id}"` | route of a screen, `{id}` = file name of `sections/<id>.json`; resolved against the server |
 | `threshold`   | `0.25`            | pixelmatch colour threshold                                                              |
 | `captureCss`  | `""`              | CSS added during capture, e.g. `":root { --safe-top: 53px; }"`                          |
+| `chromiumArgs` | text as Figma draws it | Chromium flags of every capture: `--font-render-hinting=none`, `--disable-lcd-text`. A list replaces them: repeat both when adding a flag, `[]` for Chromium's own |
 | `spacingFlag` | `4`               | the spacing audit flags differences of at least this many px                             |
 | `devices`     | six phones, 360–440 px | responsive audit viewports: `{name, width, height, captureCss?}`                     |
 | `screenRoot`  | `"body"`          | responsive audit: the element whose box is the screen edge; clipping inside it is intended |
@@ -112,15 +118,22 @@ works too: `"build": "npm run build-storybook"`, `"dist": "storybook-static"`, a
 ## Outputs
 
 - `diff/report.md`: per screen, the mean over sections and the whole-page number, then every section with
-  Figma top/height, DOM top/height, Δ top, Δ height and its mismatch; `←` marks what is over its limit.
-- `diff/results.json`: the same data for tooling (`dTop`, `dHeight`, `mismatch` per section).
+  Figma top/height, DOM top/height, Δ top, Δ height, its mismatch and its **Colour**: the share of the
+  section whose colour differs in flat areas, with the most common reference → build pair
+  (`1.06% ← #F4F5F9 → #FFFFFF`). `←` marks what is over its limit.
+- `diff/results.json`: the same data for tooling (`dTop`, `dHeight`, `mismatch`, `color`, `colorPair`,
+  `belowCapture` per section).
 - `diff/<id>-<width>-actual.png`, `-diff.png`: the full capture and mask. In a mask, red is where the build
   is lighter than Figma (ink missing), blue where it is darker (extra ink), yellow is anti-aliasing (not
-  counted); a line of text 1 px too low shows as a blue band under a red one.
-- `diff/<id>-<width>-<n>-<section>-expected.png`, `-actual.png`, `-diff.png`: every section crop.
-- `SPACING-AUDIT.md` (from `spacing-audit.mjs`): per section, the left and right margins, top and bottom
-  padding, height and the gaps between items in a row, reference versus build. Gaps are flagged pairwise
-  when both images have as many; a different count is shown but not flagged.
+  counted), magenta a colour difference in a flat area; a line of text 1 px too low shows as a blue band under
+  a red one.
+- `diff/<id>-<width>-<n>-<section>-expected.png`, `-actual.png`, `-diff.png`: every section crop. The files of
+  a screen are replaced on every run, so a crop of a section that no longer exists cannot pass for a fresh one.
+- `SPACING-AUDIT.md` and `diff/spacing.json` (from `spacing-audit.mjs`): per section, the left and right
+  margins, top and bottom padding, height and the gaps between items in a row, reference versus build. Gaps
+  are flagged pairwise when both images have as many. When the counts differ, a gap of 12 px or more left
+  without a partner of about the same size is flagged (an item missing from a row); smaller ones are not,
+  since word spaces come and go with rasterisation.
 
 ## Other phone sizes
 
@@ -131,13 +144,31 @@ opens every screen from `sections/` at each of `devices` (default: 360×640, 360
 
 | Finding                 | Meaning                                                                                        |
 | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `page scrolls sideways` | the page is wider than the screen, and neither `html` nor `body` hides horizontal overflow     |
 | `off-screen`            | cut by the edge of `screenRoot` (clipping by the element's own ancestors inside it is intended) |
 | `wider than its box`    | sticks out of its parent: flow content against the content box, absolute against the border box |
 | `text overflow`         | text wider than its own box (`text cut by an ellipsis` when it ends in `…`)                    |
-| `covered`               | at the end of scrolling, content under an element pinned to the bottom (fixed or sticky)        |
+| `text taller than its box` | its own lines reach more than half a line below its box: a line that wrapped inside a fixed height |
+| `clipped`               | text, or an icon-sized image or SVG, cut by an ancestor with `overflow: hidden` or `clip` (not a scroller). Figma's code puts `overflow-clip` on every auto-layout frame, so a row that grows too narrow cuts its end without any other sign |
+| `covered`               | at the end of scrolling, content under an element pinned to the bottom of the screen, or floating in its lower half (fixed or sticky: a tab bar, a bottom button, a floating action button) |
 
 Only the outermost offender is reported. What cannot be seen is skipped: decoration under
 `aria-hidden="true"`, elements hidden by `visibility` or `opacity`, and screen-reader-only boxes of 1×1 px.
+Text is measured by its own lines (its text and that of its inline children), so a tight line height,
+pseudo-elements, tooltips, dropdowns and badges positioned out of it, an image replacement
+(`text-indent: -9999px`), scrollers and form controls are not `text overflow` or `text taller than its box`.
+What is hidden on purpose is not `clipped`: anything positioned absolutely or fixed, a carousel track (two
+or more items of one width side by side, each most of the visible width) or anything moving (a transform
+other than the identity, an animation still running when the capture froze it; a finished fade-in or a
+section left at `translate3d(0, 0, 0)` does not count), a collapsed block (`max-height`, `height: 0`,
+`grid-template-rows: 0fr`), an ellipsis, a line clamp or a mask fade, an image cropped by a rounded frame, and
+decoration (`alt=""`, `aria-hidden`, `role="presentation"`), except an icon inside a link or a button: a
+chevron pushed out of a row is exactly what the check is for. Decorative shapes (positioned, with nothing to
+read or press) are not `off-screen` or `wider than its box`, and neither is a badge placed past its parent's
+corner with a negative offset. Toasts, cookie cards and other live regions, and a region or dialog that is
+itself the floating card, do not count as covering, and neither does a sticky header inside a scrolling card;
+a button floating inside an open dialog does. With `html` hiding its overflow and `body` scrolling, the
+sideways check measures `body`.
 A negative margin is an intended bleed and is not "wider than its box". With a dialog open (`aria-modal`,
 `role="dialog"`, `<dialog open>`) only the dialog's content is checked for being covered. An element is
 named by its section, tag and first 40 characters of text, or, without text, by its `aria-label`, `alt`
@@ -185,16 +216,31 @@ name another device shares, is keyed by its size (`"360×640"`, `"Android 360×7
   frame, so a section nested inside another (an avatar inside the hero) is never the reference for the
   sections below. A non-zero Δ top points at the section itself: its margin, the gap above it, or its own
   positioning.
-- After a correct layout, screens usually land at 1–4 % and text-heavy sections at up to ~7 %. Figma and
-  Chromium rasterise text differently, and Blink rounds the half-leading of some line heights, which puts
-  large headings 1 px higher than in Figma. WebKit rounds the same way, so matching Figma there would make the
-  real devices worse: record it under "Kept on purpose".
+- **Colour** is the share of the section whose colour differs where both images are flat. Shadows,
+  gradients and blur drawn by the two engines agree within ΔE 3, so a correct section shows 0.00 % and more
+  than 0.5 % is marked. The pair names the colours: `#F2F4F7 → #F9FAFB` is a neighbouring fill token,
+  `#E5E5E5 → #FFFFFF` over a whole section is a Figma frame without a fill (see below), `→ #000000` rows are
+  rarely real: check **Below the captured frame**.
+- Rows of a section below the captured frame (the viewport is the frame size) were not compared: they count
+  as mismatched and are listed under the table (the colour share covers the captured rows only). When a section above is taller than in Figma, fix it first.
+  Rows past the bottom of the Figma frame itself are not compared at all.
+- After a correct layout, screens usually land at 0.2–2 % and text-heavy sections at up to ~4 %: Figma and
+  Chromium still rasterise glyphs a little differently, and Blink rounds the half-leading of some line
+  heights, which puts text 1 px higher than in Figma (at any size, predictably). WebKit rounds the same way,
+  so matching Figma there would make the real devices worse: record it under "Kept on purpose".
+- **The text percentage is not a typography check.** A wrong weight or size can score lower than the right
+  one (a lighter weight simply has less ink). Take font size, weight, line height and letter spacing from the
+  saved `get_design_context` code, and use the numbers for geometry and colour, not to choose a weight.
 
 ## Typical causes of mismatch
 
 | Symptom                                                   | Usual cause                                                                                  |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Buttons, inputs or cards 2 px taller; everything below shifts | `border` instead of an inset stroke (`box-shadow: inset 0 0 0 1px`, Tailwind `ring-inset`) |
+| Buttons, inputs or cards 2 px taller; everything below shifts | `border` on a box that hugs its content or uses `content-box`; with `border-box` and a fixed or stretched size a border is fine (see strokes below) |
+| Content 1–2 px left or up inside a stroked card          | Figma's auto layout moves children in by the width of an INSIDE stroke; add it to the padding |
+| Colour `#E5E5E5 → #FFFFFF` over whole sections            | the frame has no fill and `get_screenshot` drew Figma's canvas grey: give the frame a fill, or `captureCss: "html { background: #E5E5E5 }"` |
+| Colour `#XXXXXX → #YYYYYY` on one fill or text            | a neighbouring token, or an opacity that was not carried over                              |
+| Headings narrower than in Figma                           | a variable font with automatic optical sizing: Figma draws Inter at `opsz` 14 (`font-variation-settings: 'opsz' 14`) |
 | A section is taller by exactly one padding                | the `data-section` element wraps a parent's padding; mark the inner element               |
 | A whole block shifts by one line height                   | Chromium sets the text slightly wider and it wraps; compare line widths, widen the box by 1–4 px |
 | Big mismatch in a decorative background                   | a layer that exists in Figma's code but not in its render; the PNG wins                    |
@@ -205,22 +251,47 @@ name another device shares, is keyed by its size (`"360×640"`, `"Android 360×7
 | `empty in DOM (0 px)`                                     | the marked element collapsed: its children are absolutely positioned or floated             |
 | A spacing flag on a section that looks identical          | a semi-transparent background counted as content by the audit; verify on the crops        |
 
+## From Figma to CSS
+
+Measured on the torture corpus (`corpus/` in the tool's repository): what matches Figma's render to the pixel.
+
+| Figma                                   | CSS                                                                                          |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Stroke INSIDE, W px                      | `box-shadow: inset 0 0 0 Wpx` and padding + W (auto layout moves children in by W), or `border` with `box-sizing: border-box` |
+| Stroke CENTER, W px                      | `outline: Wpx solid; outline-offset: -W/2 px`                                                |
+| Stroke OUTSIDE, W px                     | `box-shadow: 0 0 0 Wpx` (does not change the box)                                            |
+| Dashed stroke                           | `border: Wpx dashed`; Figma's dash and gap lengths cannot be set in CSS (an SVG border can)   |
+| Drop shadow x y blur spread             | `box-shadow: x y blur spread`, the same numbers                                              |
+| Layer blur R, background blur R          | `filter: blur(R/2)`, `backdrop-filter: blur(R/2)`: Figma's value is 2σ, CSS takes σ          |
+| Corner smoothing                        | none in CSS: a clip-path or SVG mask, or keep it on purpose (the check does not see it)       |
+| Line height AUTO                        | the pixel value Figma shows, never `line-height: normal` (Inter 17 px: 21 in Figma, 20 in Chromium) |
+| A long word broken mid-word             | `overflow-wrap: anywhere` (the break point can still differ by a letter)                     |
+| Inter                                   | the variable font with `font-variation-settings: 'opsz' 14`; the `font` shorthand resets it, so repeat it after one |
+
+`get_design_context` writes `border` for every stroke alignment, and `overflow-clip` on every auto-layout
+frame: read the alignment from the reference (the spacing audit's Left column shows where the ring is) and
+drop the clipping where the content is not meant to be cut. A drawn status bar and home indicator are the
+operating system's: leave them out of the sections (they do not have to cover the frame) and reserve their
+space with a safe-area variable in `captureCss`.
+
 ## CI
 
 Commit the reference PNGs and the sections files, install Chromium in the job, and run:
 
 ```bash
 npx playwright install --with-deps chromium
-node scripts/figma-pixel/pixel-diff.mjs --max-section=10 --max-geometry=1
+node scripts/figma-pixel/pixel-diff.mjs --max-section=10 --max-geometry=1 --max-color=0.5
 node scripts/figma-pixel/responsive-audit.mjs --skip-build --fail
 ```
 
 `--max-geometry=<px>` fails a section whose Δ top or Δ height is larger than the limit. `0` demands the
 same whole pixels; `1` tolerates the pixel that sub-pixel rounding can cost (Figma at 12.5, the build at
-12.4), at the price of letting a real 1 px change through. `--max-section=<percent>` fails a
-section whose mismatch is larger. Choose it from the current `PIXEL-SPEC.md` numbers plus a margin: the
+12.4), at the price of letting a real 1 px change through. `--max-color=<percent>` fails a section whose
+colour differs in more than that share of it: 0.5 matches the report's mark and a correct section shows
+0.00 %. `--max-section=<percent>` fails a section whose mismatch is larger. Choose it from the current `PIXEL-SPEC.md` numbers plus a margin: the
 goal is catching regressions, not re-litigating the accepted differences. A section recorded under "Kept on
-purpose" gets its own `maxGeometry` / `maxMismatch` in the sections file instead of a looser global limit.
+purpose" gets its own `maxGeometry` / `maxMismatch` / `maxColor` in the sections file instead of a looser
+global limit.
 A missing section fails both, and a malformed limit or an unknown flag is an error rather than a disabled
 check. Upload
 `design/figma/diff/` as an artifact to inspect failures.
@@ -232,3 +303,7 @@ check. Upload
   responsive audit, which finds breakage but has no reference to compare against.
 - A frame is compared in its static state; hover, focus and open menus need their own preview route.
 - Fonts must match: install the design's font files in the app, or the text sections will stay high.
+- What the checks cannot see, measured by the corpus benchmark (`corpus/BENCHMARK.md`: 110 of 167 realistic
+  mistakes detected): the colour of small text (glyph strokes are never flat), a radius changed by a few
+  pixels (a 1 px band at the corners), font weight, and a 2 px shift of a small element inside a section.
+  Check those against the saved `get_design_context` values.

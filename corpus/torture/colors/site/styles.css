@@ -1,0 +1,156 @@
+:root {
+  /* Gray scale (the swatches and the text colours) */
+  --gray-50: #f9fafb;
+  --gray-200: #eaecf0;
+  --gray-300: #d0d5dd;
+  --gray-400: #98a2b3;
+  --gray-500: #667085;
+  --gray-600: #475467;
+  --gray-700: #344054;
+  --gray-900: #101828;
+  /* The design's second, cooler gray family: kept distinct on purpose (the "near" band) */
+  --cool-gray-400: #9ca3af;
+  --cool-gray-500: #6b7280;
+  /* Brand */
+  --brand-600: #7f56d9;
+  --brand-700: #6941c6;
+  --pink-500: #ee46bc;
+  --warning-300: #fec84b;
+  --warning-400: #fdb022;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--gray-900);
+  font-family: Inter, sans-serif;
+}
+
+p {
+  margin: 0;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.band {
+  padding: 16px 20px;
+}
+
+/* grays: six 48 px swatches spread over the row: 9.4 px apart at 375 (Figma), 6.4 px at 360 */
+.swatches {
+  display: flex;
+  justify-content: space-between;
+}
+
+.swatch {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--swatch);
+}
+
+/* near: two tiles sharing the row 15 px apart, 160 × 64 at 375 */
+.tiles {
+  display: flex;
+  gap: 15px;
+}
+
+.tile {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 64px;
+  border-radius: var(--radius-md);
+}
+
+.tile--cool-500 {
+  background: var(--cool-gray-500);
+}
+
+.tile--cool-400 {
+  background: var(--cool-gray-400);
+}
+
+/* text colours: 15 / 20 medium, 4 px apart */
+.text-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.text-primary {
+  color: var(--gray-900);
+}
+
+.text-secondary {
+  color: var(--gray-600);
+}
+
+.text-tertiary {
+  color: var(--gray-500);
+}
+
+.text-brand {
+  color: var(--brand-700);
+}
+
+/* gradients: 335 × 80 cards */
+.gradient {
+  height: 80px;
+  border-radius: var(--radius-md);
+}
+
+/* Figma's 135° handle on a 335 × 80 box is 166.57° in CSS, stops at 14.64 % and 85.36 % */
+.gradient--linear {
+  background: linear-gradient(166.57deg, var(--brand-600) 14.644%, var(--pink-500) 85.356%);
+}
+
+/* An ellipse filling the box: 167.5 × 40 radii */
+.gradient--radial {
+  background: radial-gradient(
+    closest-side,
+    rgb(254 200 75 / 1) 0%,
+    rgb(251 172 42 / 0.5) 50%,
+    rgb(247 144 9 / 0) 100%
+  );
+}
+
+/* brand button */
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: var(--brand-600);
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+}

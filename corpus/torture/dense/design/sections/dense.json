@@ -1,0 +1,28 @@
+{
+  "node": "4:2",
+  "reference": "dense-375.png",
+  "width": 375,
+  "height": 590,
+  "sections": [
+    {
+      "name": "title",
+      "top": 0,
+      "height": 74
+    },
+    {
+      "name": "table-head",
+      "top": 74,
+      "height": 32
+    },
+    {
+      "name": "table-body",
+      "top": 106,
+      "height": 432
+    },
+    {
+      "name": "total",
+      "top": 538,
+      "height": 52
+    }
+  ]
+}

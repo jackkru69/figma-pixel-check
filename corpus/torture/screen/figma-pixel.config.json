@@ -1,0 +1,8 @@
+{
+  "dir": "design",
+  "build": null,
+  "dist": "../..",
+  "url": "/torture/{id}/site/index.html",
+  "// captureCss": "iPhone chrome drawn in the frame (3:3 status bar, 3:66 home indicator): the app gets them as safe-area insets. The home indicator is drawn over the tab bar by the OS, so it is emulated here too; the status bar band is not compared.",
+  "captureCss": ":root { --safe-top: 44px; --safe-bottom: 25px; } html::after { content: ''; position: fixed; z-index: 10; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 2.5px; background: #101828; }"
+}

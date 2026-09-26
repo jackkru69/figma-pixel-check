@@ -1,0 +1,41 @@
+{
+  "sections": {
+    "shadow-sm": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.09,
+      "color": 0
+    },
+    "shadow-lg": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.4,
+      "color": 0
+    },
+    "inner": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.08,
+      "color": 0
+    },
+    "blur": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0.05
+    },
+    "glass": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.08,
+      "color": 0
+    },
+    "glass-card": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.2,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

@@ -1,0 +1,41 @@
+{
+  "sections": {
+    "grays": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "near": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "text-colors": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 1.41,
+      "color": 0
+    },
+    "gradient-linear": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "gradient-radial": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "brand": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

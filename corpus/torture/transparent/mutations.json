@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "overlay",
+    "css": ".photo { height: 164px !important; }",
+    "note": "Photo drawn at 164 px instead of 160 (a 4 px off aspect ratio): the overlay band grows by 4 and the shade, anchored to top 80, grows with it."
+  },
+  {
+    "kind": "gap",
+    "section": "opacity",
+    "css": ".chips { gap: 8px !important; }",
+    "note": "Chip row gap 8 instead of 12 (spacing-2 token instead of spacing-3): the 60 % and 30 % chips move left by 4 and 8 px."
+  },
+  {
+    "kind": "margin",
+    "section": "opacity",
+    "css": ".chips { padding-left: 24px !important; }",
+    "note": "Row inset 24 instead of 20 on the left: all three chips shift right by 4 px."
+  },
+  {
+    "kind": "font-size",
+    "section": "overlay",
+    "css": ".photo__caption { font-size: 16px !important; }",
+    "note": "Caption set at 16 px instead of 17 (body-md instead of body-lg); it keeps its 22 px line and bottom anchor, so only the glyphs shrink."
+  },
+  {
+    "kind": "line-height",
+    "section": "text-alpha",
+    "css": ".text-alpha { line-height: 22px !important; }",
+    "note": "Line height 22 instead of 24 for the three lines: each line is 2 px shorter, the band 6 px shorter."
+  },
+  {
+    "kind": "letter-spacing",
+    "section": "overlay",
+    "css": ".photo__caption { letter-spacing: -0.34px !important; }",
+    "note": "Caption with -2 % tracking (0.02 × 17 px) copied from the display style: about 6 px narrower."
+  },
+  {
+    "kind": "font-weight",
+    "section": "overlay",
+    "css": ".photo__caption { font-weight: 500 !important; }",
+    "note": "Caption Medium instead of Semi Bold."
+  },
+  {
+    "kind": "text-color",
+    "section": "text-alpha",
+    "css": ".text-alpha__line--disabled { color: rgba(0, 0, 0, 0.6) !important; }",
+    "note": "The 38 % (disabled) line uses the 60 % secondary token: it reads as dark as the line above it."
+  },
+  {
+    "kind": "fill-color",
+    "section": "opacity",
+    "css": ".chip { background: #039855 !important; }",
+    "note": "Chips filled with the neighbouring success token #039855 instead of #12B76A (all three, since the faded ones share the fill)."
+  },
+  {
+    "kind": "radius",
+    "section": "opacity",
+    "css": ".chip { border-radius: 8px !important; }",
+    "note": "Chip radius 8 instead of 16: the pill becomes a rounded rectangle."
+  },
+  {
+    "kind": "missing",
+    "section": "opacity",
+    "css": ".chip--30 { display: none !important; }",
+    "note": "The 30 % chip is not rendered (e.g. a disabled state filtered out instead of faded)."
+  },
+  {
+    "kind": "shift",
+    "section": "overlay",
+    "css": ".photo__caption { bottom: 16px !important; }",
+    "note": "Caption anchored 16 px from the photo bottom instead of 14: 2 px higher."
+  },
+  {
+    "kind": "opacity",
+    "section": "overlay",
+    "css": ".photo__shade { background: rgba(0, 0, 0, 0.3) !important; }",
+    "note": "Scrim at 30 % black instead of 40 %: the lower half of the photo is visibly lighter and the caption has less contrast."
+  },
+  {
+    "kind": "wrap",
+    "section": "overlay",
+    "css": ".photo__caption { white-space: normal !important; max-width: 140px; }",
+    "note": "Caption given a max-width and allowed to wrap: it breaks into two lines and, being bottom-anchored, grows upwards to top 102."
+  }
+]

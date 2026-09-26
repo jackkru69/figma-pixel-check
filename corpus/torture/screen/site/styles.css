@@ -1,0 +1,267 @@
+/* Wallet screen (Figma t-screen, 3:2). Tokens from the design; Inter comes from /fonts/inter.css. */
+:root {
+  --color-bg: #f9fafb;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-text-positive: #067647;
+  --color-brand: #7f56d9;
+  --color-brand-dark: #53389e;
+  --color-brand-50: #f4ebff;
+  --color-brand-200: #e9d7fe;
+  --color-brand-300: #d6bbfb;
+  --color-icon-muted: #98a2b3;
+  --color-border: #eaecf0;
+
+  /* Device insets: the OS status bar and home indicator area. Emulated during capture. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Hairline + top padding + 49 px tab items, then the home indicator area. */
+  --tabbar-height: calc(1px + 8px + 49px + var(--safe-bottom));
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+img {
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Top bar: the status bar inset plus the 44 px navigation bar, stays on top while the list scrolls. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: var(--safe-top);
+  background: var(--color-bg);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+}
+
+.nav__title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.icon-button {
+  display: block;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.icon-button img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Scrolling content: clears the tab bar and the floating button at the end of the list. */
+.content {
+  padding: 16px 20px calc(var(--tabbar-height) + 88px);
+}
+
+.balance {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 172px;
+  padding: 20px;
+  border-radius: 20px;
+  background: linear-gradient(152.82deg, var(--color-brand-dark) 14.644%, var(--color-brand) 85.356%);
+  box-shadow: 0 12px 24px -8px rgb(83 56 158 / 0.3);
+  white-space: nowrap;
+}
+
+.balance__label {
+  color: var(--color-brand-200);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.balance__amount {
+  color: #fff;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 44px;
+  letter-spacing: -0.72px;
+}
+
+.balance__card {
+  color: var(--color-brand-300);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.recent__title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+
+.tx__avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-brand-50);
+}
+
+.tx__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tx__name {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.tx__date {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.tx__amount {
+  flex: none;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.tx__amount--in {
+  color: var(--color-text-positive);
+}
+
+/* Floating action button: 16 px above the tab bar, 20 px from the right edge. */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--tabbar-height) + 16px);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-brand);
+  box-shadow: 0 8px 16px -4px rgb(16 24 40 / 0.18);
+  cursor: pointer;
+}
+
+.fab img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Tab bar pinned to the bottom. The Figma stroke is included in the layout: the tabs start 1 + 8 px down. */
+.tabbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 8px 12px var(--safe-bottom);
+  border-top: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 80px;
+  height: 49px;
+  color: var(--color-icon-muted);
+  text-decoration: none;
+}
+
+.tab img {
+  width: 24px;
+  height: 24px;
+}
+
+.tab--active {
+  color: var(--color-brand);
+}
+
+.tab__label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 12px;
+}

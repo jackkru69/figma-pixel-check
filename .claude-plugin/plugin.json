@@ -1,7 +1,7 @@
 {
   "name": "figma-pixel-check",
   "displayName": "Figma Pixel Check",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Build web screens from Figma frames and prove they match: per-section pixel diff and spacing audit against reference PNGs exported from Figma.",
   "author": {
     "name": "jackkru69",

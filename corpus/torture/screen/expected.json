@@ -1,0 +1,35 @@
+{
+  "sections": {
+    "nav": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.51,
+      "color": 0
+    },
+    "balance": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.36,
+      "color": 0
+    },
+    "recent": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.44,
+      "color": 0
+    },
+    "fab": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0,
+      "color": 0
+    },
+    "tabbar": {
+      "dTop": 0,
+      "dHeight": 0,
+      "mismatch": 0.02,
+      "color": 0
+    }
+  },
+  "spacingFlags": {}
+}

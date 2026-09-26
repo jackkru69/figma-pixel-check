@@ -1,0 +1,16 @@
+[
+ {"kind":"height","section":"inside","css":".card--inside { height: 68px !important; }","note":"card height 64 → 68 (a 4 px taller min-height token); the band grows to 100 px"},
+ {"kind":"gap","section":"center","css":".band[data-section=\"center\"] { padding-top: 20px !important; }","note":"space above the center card 16 → 20: the vertical rhythm between cards is off by 4 px"},
+ {"kind":"margin","section":"dashed","css":".band[data-section=\"dashed\"] { padding-left: 24px !important; padding-right: 24px !important; }","note":"screen side margin 20 → 24 on one band: the dashed card is 327 px wide instead of 335"},
+ {"kind":"font-size","section":"outside","css":".card--outside .label { font-size: 16px !important; }","note":"label 15 → 16 px (neighbouring text style)"},
+ {"kind":"letter-spacing","section":"dashed","css":".card--dashed .label { letter-spacing: 0.2px !important; }","note":"label tracking 0 → 0.2 px, the label runs ~4 px longer"},
+ {"kind":"font-weight","section":"center","css":".card--center .label { font-weight: 600 !important; }","note":"Medium 500 → Semi Bold 600"},
+ {"kind":"text-color","section":"inside","css":".card--inside .label { color: #344054 !important; }","note":"gray-900 #101828 → gray-700 #344054"},
+ {"kind":"fill-color","section":"thick","css":".card--thick { box-shadow: inset 0 0 0 var(--stroke-inside) #9e77ed !important; }","note":"stroke colour primary-600 #7F56D9 → primary-400 #9E77ED"},
+ {"kind":"radius","section":"thick","css":".card--thick { border-radius: 12px !important; }","note":"radius 16 → 12 (the card radius token used for the other cards)"},
+ {"kind":"border-vs-inset","section":"outside","css":".card--outside { box-shadow: none !important; border: 2px solid var(--gray-300) !important; }","note":"outside stroke copied from Figma's generated code (border-2): with border-box the ring moves 2 px inside the card and the text 2 px in"},
+ {"kind":"shadow","section":"outside","css":".card--outside { box-shadow: 0 0 0 1px var(--gray-300) !important; }","note":"outside ring spread 2 → 1 px: the stroke is half as thick"},
+ {"kind":"missing","section":"center","css":".card--center { outline: none !important; }","note":"center stroke dropped (outline reset by a focus-ring rule)"},
+ {"kind":"shift","section":"thick","css":".card--thick .label { transform: translateY(2px) !important; }","note":"label 2 px lower than the card centre"},
+ {"kind":"opacity","section":"inside","css":".card--inside { opacity: 0.6 !important; }","note":"whole inside card at 60 % opacity (a disabled-state style leaking in)"}
+]

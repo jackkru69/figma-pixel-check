@@ -1,0 +1,13 @@
+{
+  "node": "3:2",
+  "reference": "screen-375.png",
+  "width": 375,
+  "height": 812,
+  "sections": [
+    { "name": "nav", "top": 44, "height": 44 },
+    { "name": "balance", "top": 104, "height": 172 },
+    { "name": "recent", "top": 300, "height": 368 },
+    { "name": "fab", "top": 657, "height": 56 },
+    { "name": "tabbar", "top": 729, "height": 83 }
+  ]
+}

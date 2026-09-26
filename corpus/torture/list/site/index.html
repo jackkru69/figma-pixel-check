@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>list</title>
+    <link rel="stylesheet" href="/fonts/inter.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="screen">
+      <h2 class="group-title" data-section="header">Account</h2>
+
+      <ul class="settings" data-section="rows">
+        <li>
+          <a class="row" href="#notifications">
+            <img class="row-icon" src="assets/bell.svg" width="24" height="24" alt="" />
+            <span class="row-title">Notifications</span>
+            <span class="row-value">On</span>
+            <img class="row-chevron" src="assets/chevron.svg" width="20" height="20" alt="" />
+          </a>
+        </li>
+        <li>
+          <a class="row" href="#privacy">
+            <img class="row-icon" src="assets/lock.svg" width="24" height="24" alt="" />
+            <span class="row-title">Privacy and security</span>
+            <img class="row-chevron" src="assets/chevron.svg" width="20" height="20" alt="" />
+          </a>
+        </li>
+        <li>
+          <a class="row" href="#payment-methods">
+            <img class="row-icon" src="assets/card.svg" width="24" height="24" alt="" />
+            <span class="row-title">Payment methods</span>
+            <span class="row-value">2 cards</span>
+            <img class="row-chevron" src="assets/chevron.svg" width="20" height="20" alt="" />
+          </a>
+        </li>
+        <li>
+          <a class="row" href="#language">
+            <img class="row-icon" src="assets/globe.svg" width="24" height="24" alt="" />
+            <span class="row-title">Language</span>
+            <span class="row-value">English</span>
+            <img class="row-chevron" src="assets/chevron.svg" width="20" height="20" alt="" />
+          </a>
+        </li>
+      </ul>
+
+      <nav class="chips" aria-label="Filter" data-section="chips">
+        <a class="chip is-active" href="#all" aria-current="true">All</a>
+        <a class="chip" href="#transfers">Transfers</a>
+        <a class="chip" href="#card-payments">Card payments</a>
+        <a class="chip" href="#subscriptions">Subscriptions</a>
+        <a class="chip" href="#cashback">Cashback</a>
+      </nav>
+
+      <footer class="account-note" data-section="full-divider">
+        <p>Signed in as alex@example.com</p>
+      </footer>
+    </main>
+  </body>
+</html>

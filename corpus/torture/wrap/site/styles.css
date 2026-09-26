@@ -1,0 +1,113 @@
+:root {
+  --gray-900: #101828;
+  --gray-600: #475467;
+  --gray-50: #f9fafb;
+  --brand-600: #7f56d9;
+  --white: #ffffff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--white);
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--gray-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.band {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 20px;
+  overflow: clip;
+  overflow-wrap: break-word;
+}
+
+.band--muted {
+  background: var(--gray-50);
+}
+
+/* tight-title: Figma's text boxes are exactly as wide as their text (229, 305, 218 px), i.e. hug content.
+   Fixed CSS widths would wrap as soon as a browser sets the text a pixel wider. */
+.intro {
+  gap: 8px;
+}
+
+.intro__title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--gray-900);
+}
+
+.intro__subtitle {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--gray-600);
+}
+
+/* button-label */
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand-600);
+  color: var(--white);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button__label {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  overflow-wrap: break-word;
+}
+
+/* paragraph */
+.paragraph {
+  width: 100%;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+/* columns */
+.columns {
+  flex-direction: row;
+  gap: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.columns__item {
+  flex: none;
+  width: 120px;
+  overflow-wrap: anywhere;
+}

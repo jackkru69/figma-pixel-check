@@ -1,0 +1,28 @@
+{
+  "node": "2:43",
+  "reference": "wrap-375.png",
+  "width": 375,
+  "height": 374,
+  "sections": [
+    {
+      "name": "tight-title",
+      "top": 0,
+      "height": 82
+    },
+    {
+      "name": "button-label",
+      "top": 82,
+      "height": 80
+    },
+    {
+      "name": "paragraph",
+      "top": 162,
+      "height": 120
+    },
+    {
+      "name": "columns",
+      "top": 282,
+      "height": 92
+    }
+  ]
+}

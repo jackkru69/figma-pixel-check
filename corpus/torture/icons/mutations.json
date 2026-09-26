@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "height",
+    "section": "icon-buttons",
+    "css": ".icon-button { width: 44px !important; height: 44px !important; }",
+    "note": "icon buttons made 44 px for the iOS touch-target rule instead of the design's 40 px"
+  },
+  {
+    "kind": "gap",
+    "section": "stroke-32",
+    "css": "[data-section=\"stroke-32\"] { gap: 24px !important; }",
+    "note": "the 32 px row reuses the 24 px gap of the other rows; the design has 20 px there"
+  },
+  {
+    "kind": "gap",
+    "section": "icon-buttons",
+    "css": "[data-section=\"icon-buttons\"] { gap: 12px !important; }",
+    "note": "button spacing token 12 instead of 16"
+  },
+  {
+    "kind": "margin",
+    "section": "stroke-20",
+    "css": "[data-section=\"stroke-20\"] { padding-left: 16px !important; }",
+    "note": "row inset 16 px instead of the 20 px page gutter"
+  },
+  {
+    "kind": "fill-color",
+    "section": "icon-buttons",
+    "css": ".icon-button--soft { background: #E9D7FE !important; }",
+    "note": "soft button uses primary-100 (#E9D7FE) instead of primary-50 (#F4EBFF)"
+  },
+  {
+    "kind": "fill-color",
+    "section": "icon-buttons",
+    "css": ".icon-button--solid { background: #344054 !important; }",
+    "note": "solid button uses gray-700 (#344054, the icon stroke colour) instead of gray-900 (#101828)"
+  },
+  {
+    "kind": "radius",
+    "section": "icon-buttons",
+    "css": ".icon-button { border-radius: 12px !important; }",
+    "note": "button radius token 12 instead of a full 20 px pill: circles become rounded squares"
+  },
+  {
+    "kind": "border-vs-inset",
+    "section": "icon-buttons",
+    "css": ".icon-button--outline { box-shadow: none !important; border: 1px solid #D0D5DD !important; box-sizing: content-box !important; }",
+    "note": "Figma's inside stroke ported as a border without a border-box reset: the outline button grows to 42 px"
+  },
+  {
+    "kind": "shadow",
+    "section": "icon-buttons",
+    "css": ".icon-button--solid { box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06) !important; }",
+    "note": "shadow-md copied from the button component; the design's icon buttons have no shadow"
+  },
+  {
+    "kind": "icon-size",
+    "section": "icon-buttons",
+    "css": ".icon-button .icon { width: 24px !important; height: 24px !important; }",
+    "note": "default 24 px icon size inside the 40 px buttons; the design has 20 px glyphs"
+  },
+  {
+    "kind": "icon-size",
+    "section": "stroke-24",
+    "css": "[data-section=\"stroke-24\"] .icon { width: 20px !important; height: 20px !important; }",
+    "note": "24 px row rendered with the 20 px size token"
+  },
+  {
+    "kind": "missing",
+    "section": "stroke-20",
+    "css": "[data-section=\"stroke-20\"] .icon:last-child { display: none !important; }",
+    "note": "the check icon is not rendered (conditional render bug)"
+  },
+  {
+    "kind": "shift",
+    "section": "stroke-24",
+    "css": "[data-section=\"stroke-24\"] .icon:nth-child(4) { position: relative; top: 2px; }",
+    "note": "send icon nudged 2 px down to 'optically centre' it; the design keeps it on the row's centre line"
+  },
+  {
+    "kind": "opacity",
+    "section": "stroke-16",
+    "css": "[data-section=\"stroke-16\"] .icon { opacity: 0.7; }",
+    "note": "a muted-icon class (opacity 0.7) left on the 16 px row; the design draws them at full #344054"
+  }
+]

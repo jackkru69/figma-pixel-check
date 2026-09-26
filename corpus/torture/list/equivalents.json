@@ -1,0 +1,57 @@
+[
+  {
+    "kind": "gap-vs-margin",
+    "note": "row items spaced by margins instead of gap",
+    "css": ".row { gap: 0 !important; } .row > * + * { margin-left: 12px; }"
+  },
+  {
+    "kind": "grid-vs-flex",
+    "note": "row laid out with CSS grid (implicit columns) instead of flexbox",
+    "css": ".row { display: grid !important; grid-auto-flow: column; grid-template-columns: 24px minmax(0, 1fr); grid-auto-columns: auto; align-items: center; }"
+  },
+  {
+    "kind": "nested-wrapper",
+    "note": "row titles wrapped in an extra inline span",
+    "html": [
+      [
+        "<span class=\"row-title\">Notifications</span>",
+        "<span class=\"row-title\"><span>Notifications</span></span>"
+      ],
+      [
+        "<span class=\"row-title\">Payment methods</span>",
+        "<span class=\"row-title\"><span class=\"x\">Payment</span> <span class=\"x\">methods</span></span>"
+      ]
+    ]
+  },
+  {
+    "kind": "svg-currentColor",
+    "note": "a chevron inlined as <svg> with stroke=currentColor and the colour on the element",
+    "html": [
+      [
+        "<img class=\"row-chevron\" data-node-id=\"2:169\" src=\"assets/chevron.svg\" width=\"20\" height=\"20\" alt=\"\" />",
+        "<svg class=\"row-chevron\" data-node-id=\"2:169\" width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" fill=\"none\" aria-hidden=\"true\"><path d=\"M7.5 15L12.5 10L7.5 5\" stroke=\"currentColor\" stroke-width=\"1.67\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"
+      ]
+    ],
+    "css": "svg.row-chevron { display: block; flex: none; color: #98a2b3; }"
+  },
+  {
+    "kind": "literal-vs-variable",
+    "note": "literal colours instead of the tokens",
+    "css": ".row-value, .account-note { color: #667085 !important; } .chip { background: #f2f4f7; } .chip.is-active { background: #101828; }"
+  },
+  {
+    "kind": "longhand-vs-shorthand",
+    "note": "padding and radius written as longhands",
+    "css": ".row { padding: 0 !important; padding-right: 16px !important; padding-left: 20px !important; } .chip { border-radius: 0; border-top-left-radius: 18px; border-top-right-radius: 18px; border-bottom-right-radius: 18px; border-bottom-left-radius: 18px; }"
+  },
+  {
+    "kind": "transform-no-layout",
+    "note": "an identity transform on the rows (a 2D one: a 3D transform or will-change moves the element to its own layer, which Chromium antialiases differently)",
+    "css": ".row { transform: translate(0, 0); }"
+  },
+  {
+    "kind": "margin-outside-section",
+    "note": "the header's top space as a margin (collapsing through <main>) instead of padding: the same pixels, but the marked element no longer spans the band",
+    "css": ".group-title { padding-top: 0 !important; margin-top: 24px; }"
+  }
+]

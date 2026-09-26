@@ -1,0 +1,32 @@
+[
+  {
+    "kind": "grid-vs-flex",
+    "note": "transaction rows as a three-column grid instead of flexbox",
+    "css": ".tx { display: grid !important; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; }"
+  },
+  {
+    "kind": "gap-vs-margin",
+    "note": "the balance card spaced by margins instead of gap",
+    "css": ".balance { gap: 0 !important; } .balance > * + * { margin-top: 6px; }"
+  },
+  {
+    "kind": "auto-margins",
+    "note": "the title centred by auto margins instead of space-between",
+    "css": ".nav { justify-content: flex-start !important; } .nav__title { margin: 0 auto; }"
+  },
+  {
+    "kind": "nested-wrapper",
+    "note": "the balance label wrapped in an extra div",
+    "html": [
+      [
+        "<p class=\"balance__label\">Total balance</p>",
+        "<div class=\"balance__head\"><p class=\"balance__label\">Total balance</p></div>"
+      ]
+    ]
+  },
+  {
+    "kind": "responsive-width",
+    "note": "the card's width as calc() with a left margin instead of side margins",
+    "css": ".balance { margin: 0 !important; margin-left: 20px !important; width: calc(100% - 40px); }"
+  }
+]

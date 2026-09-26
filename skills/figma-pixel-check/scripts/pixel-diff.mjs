@@ -29,6 +29,15 @@
 // With <dir>/styles/<id>.json (Figma's values, exported with figma-styles.js through use_figma), the style
 // check compares font, colour, radius, background, opacity, gap and padding with the computed styles: what
 // pixels cannot see, such as a font weight or a neighbouring text colour (style-check.mjs).
+//
+// Hotspots (hotspots.mjs) say where inside a section its mismatch is: boxes of the marked pixels, drawn on
+// <screen>-<n>-<section>-hotspots.png. They explain the numbers and never change a verdict.
+//
+// A sections file may list "states" (hover, focus, an open menu...): each is a screen of its own, named
+// <id>--<state>, reached by its actions after the page loads (screens.mjs).
+//
+// Outputs in <dir>/diff/: report.md, report.html (open it from disk), results.json (with a verdict and the
+// failures of every screen) and the crops. The console lists only what fails, one block per section.
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,8 +46,11 @@ import { chromium } from '@playwright/test';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { loadConfig } from './config.mjs';
+import { describeHotspot, drawHotspots, findHotspots } from './hotspots.mjs';
+import { writeHtmlReport } from './report-html.mjs';
+import { applyActions, loadScreens, snap, toX } from './screens.mjs';
 import { serveDist } from './serve-dist.mjs';
-import { compareStyles, readDom, readFigmaStyles, requestsFor } from './style-check.mjs';
+import { compareStyles, readDom, readFigmaStyles, requestsFor, resolveIcons, svgShapes } from './style-check.mjs';
 
 const config = loadConfig();
 const REF_DIR = join(config.dir, 'reference');
@@ -79,62 +91,12 @@ const maxStyle = limitFlag('max-style');
 if (!existsSync(SECTIONS_DIR)) {
   throw new Error(`No ${SECTIONS_DIR}: add one sections/<id>.json per screen (see references/method.md).`);
 }
-// sections/<id>.json: reference PNG, frame size and the sections {name, top, height} of one screen.
-const allScreens = readdirSync(SECTIONS_DIR)
-  .filter((file) => file.endsWith('.json'))
-  .map((file) => [file.slice(0, -'.json'.length), readScreen(join(SECTIONS_DIR, file))]);
-const screens = allScreens.filter(([id]) => only.length === 0 || only.includes(id));
-const unknown = only.filter((id) => !screens.some(([screenId]) => screenId === id));
+// sections/<id>.json: reference PNG, frame size and the sections {name, top, height} of one screen, or of
+// each of its states (screens.mjs). A screen id on the command line runs all of its states.
+const allScreens = loadScreens(SECTIONS_DIR);
+const screens = allScreens.filter(([id, screen]) => only.length === 0 || only.includes(id) || only.includes(screen.base));
+const unknown = only.filter((id) => !screens.some(([screenId, screen]) => screenId === id || screen.base === id));
 if (unknown.length > 0) throw new Error(`Unknown screen id: ${unknown.join(', ')} (see ${SECTIONS_DIR})`);
-
-function readScreen(file) {
-  const screen = JSON.parse(readFileSync(file, 'utf8'));
-  const sizes = [screen.width, screen.height].every((value) => Number.isInteger(value) && value > 0);
-  const sections =
-    Array.isArray(screen.sections) &&
-    screen.sections.length > 0 &&
-    screen.sections.every(
-      (s) => typeof s.name === 'string' && Number.isFinite(s.top) && Number.isFinite(s.height),
-    );
-  if (typeof screen.reference !== 'string' || !sizes || !sections) {
-    throw new Error(
-      `${file}: expected {reference, width, height, sections: [{name, top, height}, ...]} with integer sizes`,
-    );
-  }
-  for (const section of screen.sections) {
-    // A region: left and width (both or neither) cut a column out of the band, e.g. a sidebar.
-    if (('left' in section || 'width' in section) && !(Number.isFinite(section.left) && Number.isFinite(section.width) && section.width > 0)) {
-      throw new Error(`${file}: section "${section.name}": a region needs a left and a width > 0`);
-    }
-    for (const key of ['maxGeometry', 'maxMismatch', 'maxColor', 'maxStyle']) {
-      if (key in section && !(Number.isFinite(section[key]) && section[key] >= 0)) {
-        throw new Error(`${file}: section "${section.name}": ${key} must be a number ≥ 0`);
-      }
-    }
-  }
-  // Fractional boxes (hand-copied from figma-boxes.py) are snapped by their edges, as Chromium paints them.
-  const sectionsSnapped = screen.sections.map((section) => {
-    const snapped = { ...section, ...snap(section.top, section.height) };
-    if ('left' in section) Object.assign(snapped, toX(snap(section.left, section.width)));
-    return snapped;
-  });
-  const empty = sectionsSnapped.find((section) => section.height <= 0);
-  if (empty) throw new Error(`${file}: section "${empty.name}" has no height`);
-  const outside = sectionsSnapped.find((section) => section.top >= screen.height);
-  if (outside) throw new Error(`${file}: section "${outside.name}" starts at ${outside.top}, below the ${screen.height} px frame`);
-  return { ...screen, sections: sectionsSnapped };
-}
-
-/** Whole-pixel top and height of a box with fractional edges: each edge is rounded, not the size. */
-function snap(top, height) {
-  const snappedTop = Math.round(top);
-  return { top: snappedTop, height: Math.round(top + height) - snappedTop };
-}
-
-/** snap() of a horizontal extent, as {left, width}. */
-function toX({ top, height }) {
-  return { left: top, width: height };
-}
 
 /** Rows top..top+height (and columns left..left+width) of a PNG; what lies outside it stays transparent. */
 function crop(png, top, height, left = 0, width = png.width) {
@@ -237,16 +199,21 @@ function onWhite(png) {
   return png;
 }
 
-/** Runs in the page: fonts, then images, at most 5 s for the images. Returns the ones still loading. */
+/**
+ * Runs in the page: fonts, then the images that are drawn, at most 15 s. An image that is not rendered (a lazy
+ * image in a hidden breakpoint's markup) never loads and is not waited for. Returns the drawn ones still loading.
+ */
 async function waitForAssets() {
   await document.fonts.ready;
-  const loading = () => [...document.images].filter((img) => !img.complete);
+  // Rendered: it has a box (an unsized image still loading has an empty one); inside display: none it has none.
+  const drawn = (img) => img.getClientRects().length > 0 && img.checkVisibility?.({ visibilityProperty: true }) !== false;
+  const loading = () => [...document.images].filter((img) => !img.complete && drawn(img));
   const loaded = (img) =>
     new Promise((done) => {
       img.addEventListener('load', done, { once: true });
       img.addEventListener('error', done, { once: true });
     });
-  await Promise.race([Promise.all(loading().map(loaded)), new Promise((done) => setTimeout(done, 5000))]);
+  await Promise.race([Promise.all(loading().map(loaded)), new Promise((done) => setTimeout(done, 15000))]);
   return loading().map((img) => img.currentSrc || img.src);
 }
 
@@ -347,7 +314,8 @@ try {
       );
     }
 
-    const url = new URL((screen.url ?? config.url).replaceAll('{id}', id), baseUrl);
+    // {id} is the screen's id: all of its states render at the same route unless one sets its own url.
+    const url = new URL((screen.url ?? config.url).replaceAll('{id}', screen.base), baseUrl);
     const context = await browser.newContext({
       viewport: { width: screen.width, height: screen.height },
       deviceScaleFactor: 1,
@@ -372,7 +340,12 @@ try {
     await page.goto(url.href, { waitUntil: 'networkidle' });
     await page.addStyleTag({ url: captureUrl });
     const pending = await page.evaluate(waitForAssets);
-    if (pending.length) console.warn(`${id}: images still loading after 5 s: ${pending.join(', ')}`);
+    if (pending.length) console.warn(`${id}: images still loading after 15 s: ${pending.join(', ')}`);
+    try {
+      await applyActions(page, screen.actions);
+    } catch (error) {
+      throw new Error(`${id}: ${error.message}`);
+    }
 
     const actual = PNG.sync.read(await page.screenshot());
     // Boxes of raster images, video, canvas and raster background images, in page coordinates, for the
@@ -415,9 +388,20 @@ try {
           };
         }),
     );
-    const figmaNodes = readFigmaStyles(config.dir, id, screen.sections);
+    // A state's own values, or for the default state those of the whole screen.
+    const stylesId = screen.state === 'default' && !existsSync(join(config.dir, 'styles', `${id}.json`)) ? screen.base : id;
+    const figmaNodes = readFigmaStyles(config.dir, stylesId, screen.sections);
     const styleCheck = figmaNodes
-      ? compareStyles(figmaNodes, await page.evaluate(readDom, requestsFor(figmaNodes, screen.sections.map((s) => s.name))))
+      ? compareStyles(
+          figmaNodes,
+          await resolveIcons(
+            context,
+            // A string, not a function: readDom calls svgShapes, and neither needs eval under the page's CSP.
+            await page.evaluate(
+              `(() => { const svgShapes = ${svgShapes}; return (${readDom})(${JSON.stringify(requestsFor(figmaNodes, screen.sections.map((s) => s.name)))}); })()`,
+            ),
+          ),
+        )
       : null;
     await context.close();
     if (domSections.length === 0) {
@@ -429,7 +413,7 @@ try {
     const base = `${id}-${screen.width}`;
     // Crops of an earlier run (a section since renamed or missing) would pass for a fresh capture. Only this
     // screen's own names match: <base>-actual.png, <base>-diff.png, <base>-<n>-<section>-<kind>.png.
-    const own = new RegExp(`^${escapeRegExp(base)}-(actual|diff|\\d+-.+-(expected|actual|diff))\\.png$`);
+    const own = new RegExp(`^${escapeRegExp(base)}-(actual|diff|\\d+-.+-(expected|actual|diff|hotspots))\\.png$`);
     // Another screen whose name starts with this one's ("profile" and "profile-375-2-dark") keeps its files.
     const others = allScreens
       .map(([otherId, other]) => `${otherId}-${other.width}-`)
@@ -475,6 +459,12 @@ try {
       write(expectedCrop, `${name}-expected.png`);
       write(actualCrop, `${name}-actual.png`);
       write(diff, `${name}-diff.png`);
+      // Where the mismatch is, in the section's pixels and in the frame's (the reference's) pixels.
+      const hotspots = findHotspots(diff).map((spot) => ({
+        ...spot,
+        frame: { x: spot.x + (region ? figma.left : 0), y: spot.y + figma.top },
+      }));
+      if (hotspots.length) write(drawHotspots(actualCrop, hotspots, width, rows), `${name}-hotspots.png`);
       const total = rows * width;
       return {
         name: figma.name,
@@ -486,6 +476,13 @@ try {
         colorPair: result?.color.pair ?? null,
         colorPairShare: result?.color.pairShare ?? 0,
         belowCapture: rows - captured,
+        hotspots,
+        files: {
+          expected: `${name}-expected.png`,
+          actual: `${name}-actual.png`,
+          diff: `${name}-diff.png`,
+          hotspots: hotspots.length ? `${name}-hotspots.png` : null,
+        },
       };
     });
     if (styleCheck) {
@@ -501,7 +498,11 @@ try {
       sections.length;
     results.push({
       id,
+      screen: screen.base,
+      state: screen.state,
       node: screen.node ?? null,
+      reference: referenceFile,
+      url: url.href,
       width: screen.width,
       height: screen.height,
       mean,
@@ -515,6 +516,58 @@ try {
 } finally {
   await browser.close();
   server?.close();
+}
+
+// Every check of every section as {status, ...}: "fail" is over a limit given on the command line (or in
+// the sections file), "warn" is marked in the report without a limit, "pass", or "n/a" (no styles file).
+// A screen's verdict is "fail" when anything fails, then "warn", then "pass"; the failures are listed.
+// A section's own limit applies in runs that pass the flag, as documented; without the flag it only marks.
+const gated = (flag) => Number.isFinite(flag);
+function checksOf(section) {
+  if (section.missing) {
+    const status = [maxGeometry, maxSection, maxColor, maxStyle].some(Number.isFinite) ? 'fail' : 'warn';
+    return { section: { status, detail: `no rendered [data-section="${section.name}"] in the page` } };
+  }
+  const level = (off, isGated) => (!off ? 'pass' : isGated ? 'fail' : 'warn');
+  const geometryValues = { top: section.dTop, height: section.dHeight, ...('dLeft' in section && { left: section.dLeft, width: section.dWidth }) };
+  return {
+    geometry: {
+      status: level(offGeometry(section), gated(maxGeometry)),
+      ...geometryValues,
+      limit: Number.isFinite(geometryLimit(section)) ? geometryLimit(section) : 0,
+    },
+    pixels: {
+      // The mismatch has no mark of its own: rasterisation alone leaves some, so only a limit decides.
+      status: offMismatch(section) ? 'fail' : 'pass',
+      value: Number((section.mismatch * 100).toFixed(2)),
+      limit: Number.isFinite(mismatchLimit(section)) ? mismatchLimit(section) : null,
+    },
+    colour: {
+      status: section.empty ? 'pass' : level(offColor(section), gated(maxColor)),
+      value: Number((section.color * 100).toFixed(2)),
+      pair: section.colorPair,
+      limit: Number.isFinite(colorLimit(section)) ? colorLimit(section) : COLOR_MARK,
+    },
+    styles: section.styles
+      ? {
+          status: level(offStyle(section), gated(maxStyle)),
+          value: styleCount(section),
+          limit: Number.isFinite(styleLimit(section)) ? styleLimit(section) : 0,
+        }
+      : { status: 'n/a' },
+  };
+}
+for (const r of results) {
+  r.failures = [];
+  for (const section of r.sections) {
+    section.checks = checksOf(section);
+    for (const [check, result] of Object.entries(section.checks)) {
+      if (result.status === 'fail') r.failures.push({ section: section.name, check, ...result });
+    }
+  }
+  if (r.problems.length) r.failures.push({ section: null, check: 'console', status: 'fail', detail: r.problems.join(' | ') });
+  const statuses = r.sections.flatMap((s) => Object.values(s.checks).map((c) => c.status));
+  r.verdict = r.failures.length ? 'fail' : statuses.includes('warn') ? 'warn' : 'pass';
 }
 
 const lines = [
@@ -540,8 +593,9 @@ const lines = [
 ];
 for (const r of results) {
   lines.push(
-    `## ${r.id}${r.node ? ` (${r.node})` : ''}`,
+    `## ${r.id}${r.node ? ` (${r.node})` : ''} — ${r.verdict.toUpperCase()}`,
     '',
+    ...(r.state ? [`State \`${r.state}\` of ${r.screen}.`, ''] : []),
     `| # | Section | Figma top/h | DOM top/h | Δ top | Δ height | Mismatch | Colour |${r.missingText ? ' Styles |' : ''}`,
     `| --- | --- | --- | --- | --- | --- | --- | --- |${r.missingText ? ' --- |' : ''}`,
   );
@@ -583,6 +637,16 @@ for (const r of results) {
     lines.push('', 'Figma text not found in its section (changed, missing or split across elements):');
     for (const m of r.missingText) lines.push(`- ${m.section}: «${m.text.trim().replace(/\s+/g, ' ').slice(0, 60)}»`);
   }
+  // Hotspots of the sections whose numbers call for a look: a marked or failing value, or 1 % mismatch.
+  const located = r.sections.filter(
+    (s) => s.hotspots?.length && (s.mismatch >= 0.01 || Object.values(s.checks).some((c) => c.status !== 'pass' && c.status !== 'n/a')),
+  );
+  if (located.length) {
+    lines.push('', 'Where the mismatch is (hotspots, section pixels; outlined in -hotspots.png):');
+    for (const s of located) {
+      s.hotspots.slice(0, 3).forEach((spot, i) => lines.push(`- ${s.name} ${i + 1}: ${describeHotspot(spot)}`));
+    }
+  }
   const below = r.sections.filter((s) => s.belowCapture > 0);
   if (below.length) {
     lines.push(
@@ -613,100 +677,63 @@ for (const r of results) {
 writeFileSync(join(OUT_DIR, 'report.md'), lines.join('\n'));
 writeFileSync(join(OUT_DIR, 'results.json'), JSON.stringify(results, null, 2));
 
+writeHtmlReport(results, OUT_DIR, { threshold: config.threshold });
+
 console.log('\nScreen                 sections   whole page (shift-sensitive)');
 for (const r of results) {
-  const moved = r.sections.filter((s) => !s.missing && offGeometry(s)).map((s) => s.name);
-  const recolored = r.sections.filter((s) => !s.missing && offColor(s)).map((s) => s.name);
-  const notes = [
-    r.sections.some((s) => s.missing) ? 'missing sections' : '',
-    moved.length ? `top/height off: ${moved.join(', ')}` : '',
-    recolored.length ? `colour off: ${recolored.join(', ')}` : '',
-    r.sections.some((s) => !s.missing && offStyle(s)) ? `values off: ${r.sections.filter((s) => !s.missing && offStyle(s)).map((s) => s.name).join(', ')}` : '',
-    r.problems.length ? `${r.problems.length} console errors` : '',
-  ].filter(Boolean);
-  console.log(
-    `${r.id.padEnd(22)} ${pct(r.mean).padStart(8)}   ${pct(r.page).padStart(8)}${notes.length ? `   ⚠ ${notes.join(', ')}` : ''}`,
-  );
+  console.log(`${r.id.padEnd(22)} ${pct(r.mean).padStart(8)}   ${pct(r.page).padStart(8)}   ${r.verdict}`);
 }
-console.log(`\nReport: ${join(OUT_DIR, 'report.md')}`);
 
+// What fails, one block per section, short enough for a CI log: every check of the section, the first
+// values that differ and the largest hotspot. The rest is in the reports.
+const STYLE_LINES = 3;
+const blocks = [];
+for (const r of results) {
+  const failing = [...new Set(r.failures.map((f) => f.section))];
+  for (const name of failing) {
+    if (name === null) {
+      blocks.push(`FAIL ${r.id}\n  console: ${r.problems.join(' | ')}`);
+      continue;
+    }
+    const section = r.sections.find((s) => s.name === name);
+    const block = [`FAIL ${r.id} / ${name}`];
+    const { checks } = section;
+    if (checks.section) {
+      block.push(`  missing: ${checks.section.detail}`);
+      blocks.push(block.join('\n'));
+      continue;
+    }
+    const limit = (c, unit) => (c.status === 'fail' ? ` (limit ${c.limit}${unit})` : '');
+    const g = checks.geometry;
+    block.push(
+      `  geometry: ${g.status === 'pass' ? 'pass' : `top ${signed(g.top)}, height ${signed(g.height)}${'left' in g ? `, left ${signed(g.left)}, width ${signed(g.width)}` : ''} px${limit(g, ' px')}`}`,
+    );
+    if (checks.styles.status !== 'n/a') {
+      const s = checks.styles;
+      block.push(`  styles: ${s.status === 'pass' ? 'pass' : `${s.value} difference${s.value === 1 ? '' : 's'}${limit(s, '')}`}`);
+      if (s.status !== 'pass') {
+        const list = [
+          ...section.styles.off.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`),
+          ...(section.styles.missingText ? [`${section.styles.missingText} Figma text(s) not found`] : []),
+        ];
+        block.push(...list.slice(0, STYLE_LINES).map((line) => `    ${line}`));
+        if (list.length > STYLE_LINES) block.push(`    … ${list.length - STYLE_LINES} more in the report`);
+      }
+    }
+    const c = checks.colour;
+    block.push(`  colour: ${c.status === 'pass' ? 'pass' : `${c.value} %${c.pair ? ` ${c.pair}` : ''}${limit(c, ' %')}`}`);
+    const p = checks.pixels;
+    block.push(`  pixels: ${p.status === 'pass' ? `pass (${p.value} %)` : `${p.value} %${limit(p, ' %')}`}`);
+    // For a colour failure the box with the most recoloured pixels, else the largest.
+    const spot =
+      c.status === 'fail' && p.status !== 'fail'
+        ? [...section.hotspots].sort((a, b) => b.colour - a.colour)[0]
+        : section.hotspots?.[0];
+    if (spot && (p.status === 'fail' || c.status === 'fail')) block.push(`    hotspot: ${describeHotspot(spot)}`);
+    blocks.push(block.join('\n'));
+  }
+}
+if (blocks.length) console.error(`\n${blocks.join('\n\n')}`);
+console.log(`\nReport: ${join(OUT_DIR, 'report.html')} (also report.md, results.json)`);
 // Console errors and CSP violations fail every run: a blocked style or script changes the page silently.
-const broken = results.filter((r) => r.problems.length > 0).map((r) => `${r.id}: ${r.problems.join(' | ')}`);
-if (broken.length > 0) {
-  console.error(`\nConsole errors or CSP violations:\n  ${broken.join('\n  ')}`);
-  process.exitCode = 1;
-}
-
-if (Number.isFinite(maxSection)) {
-  const failing = results.flatMap((r) =>
-    r.sections
-      .filter((section) => section.missing || offMismatch(section))
-      .map(
-        (section) =>
-          `${r.id}/${section.name}: ${section.missing ? 'missing' : `${pct(section.mismatch)} (limit ${mismatchLimit(section)}%)`}`,
-      ),
-  );
-  if (failing.length > 0) {
-    console.error(`\nFailed (> ${maxSection}% per section):\n  ${failing.join('\n  ')}`);
-    process.exitCode = 1;
-  }
-}
-
-if (Number.isFinite(maxGeometry)) {
-  const failing = results.flatMap((r) =>
-    r.sections
-      .filter((section) => section.missing || offGeometry(section))
-      .map(
-        (section) =>
-          `${r.id}/${section.name}: ${
-            section.missing
-              ? 'missing'
-              : `top ${signed(section.dTop)}, height ${signed(section.dHeight)}${
-                  'dLeft' in section ? `, left ${signed(section.dLeft)}, width ${signed(section.dWidth)}` : ''
-                } px (limit ${geometryLimit(section)} px)`
-          }`,
-      ),
-  );
-  if (failing.length > 0) {
-    console.error(`\nFailed (top or height off by > ${maxGeometry} px):\n  ${failing.join('\n  ')}`);
-    process.exitCode = 1;
-  }
-}
-
-if (Number.isFinite(maxColor)) {
-  const failing = results.flatMap((r) =>
-    r.sections
-      .filter((section) => section.missing || offColor(section))
-      .map(
-        (section) =>
-          `${r.id}/${section.name}: ${
-            section.missing
-              ? 'missing'
-              : `${pct(section.color)} ${section.colorPair ?? ''} (limit ${colorLimit(section)}%)`
-          }`,
-      ),
-  );
-  if (failing.length > 0) {
-    console.error(`\nFailed (colour differs in > ${maxColor}% of a section):\n  ${failing.join('\n  ')}`);
-    process.exitCode = 1;
-  }
-}
-
-if (Number.isFinite(maxStyle)) {
-  const failing = results.flatMap((r) =>
-    r.sections
-      .filter((section) => section.missing || (section.styles && offStyle(section)))
-      .map((section) =>
-        section.missing
-          ? `${r.id}/${section.name}: missing`
-          : `${r.id}/${section.name}: ${styleCount(section)} value(s) differ from Figma (limit ${styleLimit(section)}): ${[
-              ...section.styles.off.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`),
-              ...(section.styles.missingText ? [`${section.styles.missingText} text(s) not found`] : []),
-            ].join('; ')}`,
-      ),
-  );
-  if (failing.length > 0) {
-    console.error(`\nFailed (values differ from Figma):\n  ${failing.join('\n  ')}`);
-    process.exitCode = 1;
-  }
-}
+if (results.some((r) => r.verdict === 'fail')) process.exitCode = 1;

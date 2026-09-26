@@ -5,7 +5,7 @@ fixtures and as a benchmark of what the checks detect. Scope agreed with the own
 
 ## Sources
 
-- **Torture file** (ours, created through the Figma MCP in the owner's Petabox Pro drafts,
+- **Torture file** (ours, created through the Figma MCP in the owner's team drafts,
   `4bY3mT5LutycwuJdVGXGK5`): 12 frames, one hard feature each — strokes, type metrics, text wrap, effects,
   colours, fractional geometry, radii and masks, transparency, a settings list, a full 375×812 screen with
   pinned bars, icons, a dense table. Committed in full.

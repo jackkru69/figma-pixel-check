@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "radius-notation",
+    "note": "a pill of 50 % on a square instead of 28 px on 56, and 9999px instead of 999px",
+    "css": ".swatch--28 { border-radius: 50% !important; } .pill { border-radius: 9999px !important; }"
+  },
+  {
+    "kind": "longhand-vs-shorthand",
+    "note": "the sheet's top radius as longhands",
+    "css": ".sheet { border-radius: 0 !important; border-top-left-radius: 24px !important; border-top-right-radius: 24px !important; }"
+  }
+]

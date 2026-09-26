@@ -1,0 +1,23 @@
+[
+  {
+    "kind": "table-widths",
+    "note": "column widths on the header cells instead of a <colgroup>",
+    "html": [
+      [
+        "<colgroup>\n          <col class=\"ops__col-date\" />\n          <col />\n          <col class=\"ops__col-amount\" />\n        </colgroup>\n",
+        ""
+      ]
+    ],
+    "css": ".ops th:first-child { width: 84px; } .ops th:last-child { width: 116px; }"
+  },
+  {
+    "kind": "gap-vs-margin",
+    "note": "the title's 2 px as a margin instead of gap",
+    "css": ".statement__title { gap: 0 !important; } .statement__title p { margin-top: 2px; }"
+  },
+  {
+    "kind": "literal-vs-variable",
+    "note": "literal gutter and colours instead of the tokens",
+    "css": ".ops th:first-child, .ops td:first-child { padding-left: 20px !important; } .ops th:last-child, .ops td:last-child { padding-right: 20px !important; } .ops td:first-child, .ops th { color: #667085 !important; }"
+  }
+]

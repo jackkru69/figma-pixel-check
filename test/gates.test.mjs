@@ -59,8 +59,12 @@ describe('pixel-diff --max-geometry', () => {
   test('blames the taller section, not the ones it pushes down', () => {
     const { code, out } = run('pixel-diff.mjs', '--max-geometry=1');
     assert.equal(code, 1, out);
-    assert.match(out, /profile\/hero: top 0, height -8 px \(limit 1 px\)/);
-    assert.doesNotMatch(out, /profile\/(nav|stats|settings|action):/);
+    assert.match(out, /FAIL profile \/ hero\n  geometry: top 0, height -8 px \(limit 1 px\)/);
+    assert.doesNotMatch(out, /FAIL profile \/ (nav|stats|settings|action)/);
+    assert.match(out, /report\.html/);
+    const [screen0] = readJson('design/diff/results.json');
+    assert.equal(screen0.verdict, 'fail');
+    assert.deepEqual(screen0.failures.map((f) => [f.section, f.check, f.height, f.limit]), [['hero', 'geometry', -8, 1]]);
     const [screen] = readJson('design/diff/results.json');
     const geometry = Object.fromEntries(screen.sections.map((s) => [s.name, [s.dTop, s.dHeight]]));
     assert.deepEqual(geometry, { nav: [0, 0], hero: [0, -8], stats: [0, 0], settings: [0, 0], action: [0, 0] });
@@ -91,7 +95,7 @@ describe('pixel-diff --max-geometry', () => {
     );
     try {
       const { out } = run('pixel-diff.mjs', '--max-geometry=1');
-      assert.doesNotMatch(out, /profile\/action:/);
+      assert.doesNotMatch(out, /FAIL profile \/ action/);
       const action = readJson('design/diff/results.json')[0].sections[4];
       assert.deepEqual([action.dTop, action.dHeight], [0, 0]);
     } finally {
@@ -109,7 +113,7 @@ describe('pixel-diff --max-geometry', () => {
       () => {
         const { code, out } = run('pixel-diff.mjs', '--max-geometry=1');
         assert.equal(code, 1, out);
-        assert.match(out, /profile\/hero: top 0, height -8 px/);
+        assert.match(out, /FAIL profile \/ hero\n  geometry: top 0, height -8 px/);
         const hero = readJson('design/diff/results.json')[0].sections[1];
         assert.deepEqual([hero.figma.top, hero.figma.height, hero.dom.top, hero.dom.height], [56, 180, 56, 172]);
         assert.doesNotMatch(readFileSync(join(dir, 'design/diff/report.md'), 'utf8'), /not in the sections file/);
@@ -157,8 +161,10 @@ describe('pixel-diff --max-geometry', () => {
     withPage((html) => html, '.action button { background: #fbd5d5 !important; }', () => {
       const { code, out } = run('pixel-diff.mjs', '--max-color=2');
       assert.equal(code, 1, out);
-      assert.match(out, /profile\/action: \d+\.\d+% #FDE8E8 → #FBD5D5 \(limit 2%\)/);
-      assert.doesNotMatch(out, /profile\/(nav|hero|stats|settings):/);
+      assert.match(out, /FAIL profile \/ action\n[^]*?colour: \d+\.\d+ % #FDE8E8 → #FBD5D5 \(limit 2 %\)\n  pixels: pass/);
+      assert.doesNotMatch(out, /FAIL profile \/ (nav|hero|stats|settings)/);
+      // The hotspot shown is the button, where the colour changed.
+      assert.match(out, /hotspot: x=\d+ y=\d+ w=3\d\d h=4\d/);
       const action = readJson('design/diff/results.json')[0].sections[4];
       assert.ok(action.mismatch < 0.01, `mismatch ${action.mismatch} would have hidden it`);
       assert.ok(action.color > 0.3, `colour ${action.color}`);
@@ -206,7 +212,7 @@ describe('pixel-diff --max-geometry', () => {
     try {
       run('pixel-diff.mjs', 'profile-375-2-dark');
       run('pixel-diff.mjs', 'profile');
-      const crops = readdirSync(join(dir, 'design/diff')).filter((file) => file.startsWith('profile-375-2-dark-375-'));
+      const crops = readdirSync(join(dir, 'design/diff')).filter((file) => file.startsWith('profile-375-2-dark-375-') && !file.endsWith('-hotspots.png'));
       assert.equal(crops.length, 2 + 3 * original.sections.length, crops.join(' '));
     } finally {
       rmSync(join(dir, 'design/sections/profile-375-2-dark.json'));
@@ -309,8 +315,8 @@ describe('pixel-diff --max-geometry', () => {
       withSite(markup, '.col { position: absolute; top: 56px; height: 180px; } .a { left: 10px; width: 177px; } .b { left: 187px; width: 188px; }', () => {
         const { code, out } = run('pixel-diff.mjs', '--max-geometry=0');
         assert.equal(code, 1, out);
-        assert.match(out, /profile\/left-col: top 0, height 0, left \+10, width -10 px/);
-        assert.doesNotMatch(out, /profile\/right-col:/);
+        assert.match(out, /FAIL profile \/ left-col\n  geometry: top 0, height 0, left \+10, width -10 px/);
+        assert.doesNotMatch(out, /FAIL profile \/ right-col/);
         const report = readFileSync(join(dir, 'design/diff/report.md'), 'utf8');
         assert.match(report, /\| left-col \| 56\/180 @ 0\/187 \| 56\/180 @ 10\/177 \| 0 · left \+10 ← \| 0 · width -10 ← \|/);
       });

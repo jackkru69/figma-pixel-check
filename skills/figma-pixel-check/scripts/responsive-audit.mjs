@@ -126,16 +126,21 @@ function acceptance(id, device, finding) {
   return { known: true };
 }
 
-/** Runs in the page: fonts, then images, at most 5 s for the images. Returns the ones still loading. */
+/**
+ * Runs in the page: fonts, then the images that are drawn, at most 15 s. An image that is not rendered (a lazy
+ * image in a hidden breakpoint's markup) never loads and is not waited for. Returns the drawn ones still loading.
+ */
 async function waitForAssets() {
   await document.fonts.ready;
-  const loading = () => [...document.images].filter((img) => !img.complete);
+  // Rendered: it has a box (an unsized image still loading has an empty one); inside display: none it has none.
+  const drawn = (img) => img.getClientRects().length > 0 && img.checkVisibility?.({ visibilityProperty: true }) !== false;
+  const loading = () => [...document.images].filter((img) => !img.complete && drawn(img));
   const loaded = (img) =>
     new Promise((done) => {
       img.addEventListener('load', done, { once: true });
       img.addEventListener('error', done, { once: true });
     });
-  await Promise.race([Promise.all(loading().map(loaded)), new Promise((done) => setTimeout(done, 5000))]);
+  await Promise.race([Promise.all(loading().map(loaded)), new Promise((done) => setTimeout(done, 15000))]);
   return loading().map((img) => img.currentSrc || img.src);
 }
 
@@ -530,7 +535,7 @@ try {
       await page.addStyleTag({ url: captureUrl });
       const pending = await page.evaluate(waitForAssets);
       if (pending.length) {
-        console.warn(`${id} (${deviceKeys.get(device)}): images still loading after 5 s: ${pending.join(', ')}`);
+        console.warn(`${id} (${deviceKeys.get(device)}): images still loading after 15 s: ${pending.join(', ')}`);
       }
       const widths = await page.evaluate(inspectWidths, config.screenRoot);
       const png = await page.screenshot({ fullPage });

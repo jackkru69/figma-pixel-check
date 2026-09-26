@@ -9,7 +9,7 @@
     {
       "name": "figma-pixel-check",
       "source": ".",
-      "description": "Visual QA for Figma to web: compares a built page with its Figma frame section by section (geometry, pixels, colours and Figma's own values: fonts, radii, strokes, shadows, gap, padding) and checks it at six phone sizes. Plain Node + Playwright, runs in CI."
+      "description": "Independent Figma fidelity checks for web frontends, whoever builds them: per-section geometry, pixels (with hotspots), colours and Figma's own style values, in every state the design draws, plus a responsive audit at six phone sizes. Plain Node + Playwright, deterministic, with CI gates and an HTML report."
     }
   ]
 }

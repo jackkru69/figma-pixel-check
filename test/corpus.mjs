@@ -3,7 +3,9 @@
 //
 //   node test/corpus.mjs --update [dirs...]   run the tool on each screen and rewrite its expected.json
 //
-// expected.json: {sections: {name: {dTop, dHeight, mismatch, color, styles?, missingText?}}, spacingFlags: {section: [property]}}.
+// expected.json: {sections: {name: {dTop, dHeight, mismatch, color, styles?, missingText?}}, spacingFlags: {section: [property]},
+// exits?}. On the internal corpus both scripts must pass; an external case records its baseline instead,
+// failures included ("exits": {"pixelDiff", "responsive"}), since it is added before the checker changes for it.
 // The test wants the geometry exactly, the mismatch no more than MISMATCH_SLACK and the colour share no more
 // than COLOR_SLACK percentage points higher, the same style differences (screens with styles/<id>.json), the same spacing flags, pixel-diff without console errors, and
 // responsive-audit --fail passing.
@@ -70,9 +72,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const dirs = args.filter((arg) => !arg.startsWith('--')).map((dir) => resolve(dir));
   for (const dir of dirs.length ? dirs : corpusScreens()) {
     const now = measure(dir);
-    if (now.diff.code !== 0) console.warn(`${relative(ROOT, dir)}: pixel-diff exited ${now.diff.code}\n${now.diff.out}`);
+    if (now.diff.code !== 0 && !relative(CORPUS, dir).startsWith('external')) console.warn(`${relative(ROOT, dir)}: pixel-diff exited ${now.diff.code}\n${now.diff.out}`);
     if (now.responsive.code !== 0) console.warn(`${relative(ROOT, dir)}: responsive-audit --fail exited ${now.responsive.code}`);
-    writeFileSync(join(dir, 'expected.json'), `${JSON.stringify({ sections: now.sections, spacingFlags: now.spacingFlags }, null, 2)}\n`);
+    const external = relative(CORPUS, dir).startsWith('external');
+    const exits = external ? { exits: { pixelDiff: now.diff.code, responsive: now.responsive.code } } : {};
+    writeFileSync(join(dir, 'expected.json'), `${JSON.stringify({ sections: now.sections, spacingFlags: now.spacingFlags, ...exits }, null, 2)}\n`);
     console.log(`${relative(ROOT, dir)}: wrote expected.json`);
   }
 }

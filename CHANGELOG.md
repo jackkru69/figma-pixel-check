@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.6.0 — 2026-09-26
+
+- Hotspots: boxes where a section's mismatch is, in section and frame pixels, outlined on
+  `-hotspots.png`; text rasterisation spread over every line makes none. Diagnostic only.
+- States: a sections file may list `states` (hover, focus, checked, open, disabled...), each reached by
+  actions (`hover`, `click`, `focus`, `check`, `fill`, `press`, `wait`...) or its own url, and compared as
+  `<id>--<state>`. Files without states work as before.
+- Text matching: `data-node-id` first for texts too; equal texts pair by position, not DOM order; text split
+  into inline elements by the build or by Figma is found; visible elements win over hidden copies; never a
+  partial match.
+- Icons: SVG shapes computed by the browser (classes and `<style>`, groups, `currentColor`, viewBox scale),
+  in a blank page for SVG files so the page's CSP cannot block them; inline `<svg>` and textless icon
+  wrappers are checked too.
+- Reports: `report.html` (static, crops side by side with a slider), a `verdict`, per-check statuses and
+  `failures` in `results.json`, and a short CI log of the failing sections only.
+- `drift.mjs`: this run against a saved snapshot of an earlier one; never fails a job.
+- `review-context.mjs`: what the checks found, for an optional independent review.
+- Benchmarks: a false-positive benchmark (`equivalents.json`, 1 of 27 flagged), and the external unseen
+  corpus with its rules, reported apart from the internal one; its details stay in a local report.
+- Found on the external corpus, fixed as general rules: colours in `oklab()` / `color-mix()` notation;
+  texts in form fields (value, placeholder); Figma layers hidden under an opaque layer; Tailwind's
+  placeholder shadows; 0 px border resets; one-sided strokes drawn as inset shadows; Figma lines drawn as
+  thin boxes. Painted frames without `data-node-id` are now found by their box when that is unambiguous.
+- The benchmark pairs repeated section names by occurrence (the second of two sections with one name was compared with the first).
+- `test/mutate.mjs` writes an external case's mutations from its build alone.
+
 ## 0.5.0 — 2026-09-26
 
 - Style check: positions of nodes outside the flow, stroke alignment, SVG icon shapes and colours,

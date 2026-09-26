@@ -51,6 +51,7 @@ const walk = (node, parentOpacity) => {
   };
   if ('layoutSizingHorizontal' in node) entry.sizing = [node.layoutSizingHorizontal, node.layoutSizingVertical];
   if (node.layoutPositioning === 'ABSOLUTE') entry.layoutPositioning = 'ABSOLUTE';
+  if (node.isMask) entry.isMask = true;
   if (node.type === 'TEXT') {
     Object.assign(entry, {
       characters: node.characters,

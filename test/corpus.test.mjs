@@ -5,13 +5,18 @@ import { join, relative } from 'node:path';
 import { describe, test } from 'node:test';
 import { COLOR_SLACK, MISMATCH_SLACK, ROOT, corpusScreens, measure } from './corpus.mjs';
 
-describe('corpus', () => {
-  for (const dir of corpusScreens().filter((screen) => existsSync(join(screen, 'expected.json')))) {
+// The external corpus is local and records a baseline, failures included: `npm run external` compares with it.
+const external = process.env.CORPUS_GROUP === 'external';
+const inGroup = (dir) => relative(join(ROOT, 'corpus'), dir).startsWith('external') === external;
+
+describe(external ? 'external corpus against its baseline' : 'corpus', () => {
+  for (const dir of corpusScreens().filter((screen) => inGroup(screen) && existsSync(join(screen, 'expected.json')))) {
     test(relative(join(ROOT, 'corpus'), dir), () => {
       const expected = JSON.parse(readFileSync(join(dir, 'expected.json'), 'utf8'));
       const now = measure(dir);
-      assert.equal(now.diff.code, 0, `pixel-diff: ${now.diff.out}`);
-      assert.equal(now.responsive.code, 0, `responsive-audit --fail: ${now.responsive.out}`);
+      // An external case keeps the exits of its baseline, failures included; the internal corpus passes.
+      assert.equal(now.diff.code, expected.exits?.pixelDiff ?? 0, `pixel-diff: ${now.diff.out}`);
+      assert.equal(now.responsive.code, expected.exits?.responsive ?? 0, `responsive-audit --fail: ${now.responsive.out}`);
       for (const [name, want] of Object.entries(expected.sections)) {
         const got = now.sections[name];
         assert.ok(got, `section ${name} is gone`);

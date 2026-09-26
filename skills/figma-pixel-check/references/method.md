@@ -10,7 +10,8 @@
    positions (`chromiumArgs`), whatever the machine's font settings, so a laptop and CI measure the same.
    Animations, transitions and the caret are frozen, and `captureCss` is added. The capture CSS is served from the page's own origin, so a CSP with
    `style-src 'self'` stays enforced.
-3. After `networkidle`, fonts and images (at most 5 s for images; the ones still loading are printed), the
+3. After `networkidle`, fonts and the images that are rendered (at most 15 s; an image inside `display: none`, such
+   as a lazy image of another breakpoint, never loads and is not waited for; the ones still loading are printed), the
    page is captured, and the box of every rendered `[data-section]` element is read. An element that is not
    rendered (`display: none`, e.g. the desktop twin of a mobile nav) is skipped; boxes are snapped to whole
    pixels by their edges, as Chromium paints them.
@@ -24,8 +25,17 @@
    geometry of every section is compared too: **Δ top** and **Δ height** (see [Reading the numbers](#reading-the-numbers)).
 5. With `styles/<id>.json`, the **style check** compares Figma's own values with the computed styles (see
    [Style check](#style-check)).
-6. Console errors, page errors and CSP violations fail the run (exit code 1): a blocked stylesheet or
+6. Each section's marked pixels are grouped into **hotspots**: where its mismatch is (see
+   [Hotspots](#hotspots)). They explain the numbers and never change a verdict.
+7. Console errors, page errors and CSP violations fail the run (exit code 1): a blocked stylesheet or
    script changes the page silently, and the numbers would be measured on the wrong page.
+
+A sections file may list **states** (hover, focus, an open menu): each is captured and compared as a screen
+of its own after its actions run (see [States](#states)).
+
+The checks are deterministic: the same build, reference and Chromium give the same numbers, whoever wrote
+the page. The optional [independent review](#independent-review) and [drift](#drift-between-runs) sit on
+top of them and never decide pass or fail.
 
 ## Files
 
@@ -46,14 +56,14 @@ design/figma/
 
 ```json
 {
-  "node": "1314:1953",
-  "reference": "card-balance-375.png",
+  "node": "12:345",
+  "reference": "account-375.png",
   "width": 375,
   "height": 812,
-  "url": "/preview/card-balance?state=empty",
+  "url": "/preview/account?state=empty",
   "sections": [
     { "name": "nav", "top": 53, "height": 40 },
-    { "name": "bank-card", "top": 109, "height": 200 },
+    { "name": "card", "top": 109, "height": 200 },
     { "name": "history", "top": 483, "height": 248, "maxMismatch": 9, "reason": "dense text, font rasterisation" }
   ]
 }
@@ -129,14 +139,36 @@ works too: `"build": "npm run build-storybook"`, `"dist": "storybook-static"`, a
   Figma top/height, DOM top/height, Δ top, Δ height, its mismatch and its **Colour**: the share of the
   section whose colour differs in flat areas, with the most common reference → build pair
   (`1.06% ← #F4F5F9 → #FFFFFF`). `←` marks what is over its limit.
+- `diff/report.html`: the same, for people: one static file next to the crops (open it from disk or from a
+  CI artifact; nothing is loaded from the network). Every screen with its verdict, every section with its
+  numbers, the values that differ, its hotspots, and Figma | build | diff | hotspots side by side with a
+  slider over Figma and the build.
 - `diff/results.json`: the same data for tooling (`dTop`, `dHeight`, `mismatch`, `color`, `colorPair`,
-  `belowCapture` per section).
+  `belowCapture`, `hotspots`, `files` per section). Every section has `checks`: `geometry`, `pixels`,
+  `colour`, `styles`, each `{status, value, limit}` with status `pass`, `warn` (marked in the report, no
+  limit given), `fail` (over a limit given) or `n/a`. Every screen has a `verdict` (`fail` when anything
+  fails, else `warn`, else `pass`) and its `failures`: `[{section, check, status, ...values, limit}]`, and
+  `section: null, check: "console"` for console errors. The exit code is 1 exactly when a verdict is `fail`.
+- The console lists only what fails, one short block per section: every check with its value and limit,
+  the first three values that differ, the largest hotspot, and the path of `report.html`:
+
+```
+FAIL settings / profile-card
+  geometry: pass
+  styles: 2 differences (limit 0)
+    «Alex Kim» font-weight 600 → 500
+    card 9:5 radius 16 → 12
+  colour: pass
+  pixels: 3.4 % (limit 2 %)
+    hotspot: x=180 y=24 w=110 h=56 — 41.2 % of the box, 63 % of the section's mismatch
+```
 - `diff/<id>-<width>-actual.png`, `-diff.png`: the full capture and mask. In a mask, red is where the build
   is lighter than Figma (ink missing), blue where it is darker (extra ink), yellow is anti-aliasing (not
   counted), magenta a colour difference in a flat area; a line of text 1 px too low shows as a blue band under
   a red one.
-- `diff/<id>-<width>-<n>-<section>-expected.png`, `-actual.png`, `-diff.png`: every section crop. The files of
-  a screen are replaced on every run, so a crop of a section that no longer exists cannot pass for a fresh one.
+- `diff/<id>-<width>-<n>-<section>-expected.png`, `-actual.png`, `-diff.png`, `-hotspots.png`: every section
+  crop, and the build's crop with the hotspots outlined (when there are any). The files of a screen are
+  replaced on every run, so a crop of a section that no longer exists cannot pass for a fresh one.
 - `SPACING-AUDIT.md` and `diff/spacing.json` (from `spacing-audit.mjs`): per section, the left and right
   margins, top and bottom padding, height and the gaps between items in a row, reference versus build. Gaps
   are flagged pairwise when both images have as many. When the counts differ, a gap of 12 px or more left
@@ -152,10 +184,36 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    MCP `use_figma` tool (read-only; set `FRAME` to the frame's node id) and save the returned JSON as
    `design/figma/styles/<id>.json`. `use_figma` cuts its output at about 20 KB, so a big frame comes in
    parts: while the result has a `next`, run it again with `FROM` set to it and append the `nodes`.
-2. Text is found by itself: each Figma text node is matched to the element inside its section whose text
-   is the same (whitespace and case aside; the n-th equal text for the n-th node). Other nodes need
-   `data-node-id="<node id>"` on their element, the attribute `get_design_context` writes: keep it on cards,
-   buttons, chips and the frames whose padding and gap matter.
+2. Every node is found through `data-node-id="<node id>"` on its element first, the attribute
+   `get_design_context` writes: keep it on cards, buttons, chips, icons and the frames whose padding and gap
+   matter. A text without one is found by its text inside its section, in this order:
+   - the deepest element holding exactly the text, part of it directly (whitespace, soft hyphens,
+     zero-width characters and case aside);
+   - Figma's own split (`Hello` and `John` as two nodes, `<p>Hello <b>John</b></p>` in the build): the
+     element whose own text is the node's;
+   - the build's split (`<span>Hello</span> <span>John</span>` for one node): the element wrapping the pieces.
+
+   Never a part of a text: `Alex` is not found in `Alex Kim`. Equal texts of one section (three "Edit"
+   buttons) pair with their elements by where they are drawn, nearest first, not by DOM order; a visible
+   element wins over a hidden copy. A text the build writes differently (translated, formatted, or cut) is
+   not found and is listed: give it its `data-node-id`. The attributes can live in the preview build only.
+   A form field's text is its value, or its placeholder while it is empty (drawn with `::placeholder`).
+
+   A node that paints (a fill, a stroke, a shadow) and has no `data-node-id` is found by its box: the one
+   element of its section with a background, border, shadow or outline at the same place and size, within
+   1 px. Two painted candidates, or two painted Figma nodes on the same box (a frame and its background
+   rectangle), leave it unmatched rather than guessed. Such an element's children need not be Figma's (a
+   build may drop a wrapper frame), so its Auto Layout gap is compared only when it has as many children as
+   the Figma node; its padding always.
+
+   What Figma draws under an opaque layer painted later (a row behind a banner, a leftover label under a card)
+   is not visible in the design and is not looked for.
+
+   Colours are read in any notation the build uses (`oklab()` from Tailwind's opacity modifiers, `oklch()`,
+   `color()`, `color-mix()`): the browser converts them. Shadows that draw nothing (transparent, or without
+   offset, blur and spread, as Tailwind lists on every element) do not count as a shadow; a border of 0 px
+   counts as no border; a one-sided stroke may be an inset shadow moved by its weight (`inset 0 -1px 0 0`); a
+   Figma line may be a border or a thin box filled with its colour.
 3. `pixel-diff` then adds a **Styles** column (`12 ✓`, or `2 of 12 ←`) and lists what differs, Figma → build:
 
 ```
@@ -172,7 +230,7 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 | any placed by hand | its position (outside Auto Layout: a floating button, a caption on a photo, a dot in a mask): down from its section's top, across from the frame's edge, within 1 px; texts too |
 | strokes    | colour, weight and alignment: a `border` (inside, or outside when the box grew by it), an `outline` (by its offset), or a `box-shadow` ring (inset inside, outer outside, both halves centred); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells) |
 | effects    | drop and inner shadows against `box-shadow`, and a shadow the design does not have; layer and background blur against `filter` / `backdrop-filter: blur(R/2)`; corner smoothing needs a `clip-path` |
-| icons      | vectors inside an SVG shown with `<img>`: their stroke colour and weight and their fill against the shapes of the SVG file |
+| icons      | vectors inside an icon: an SVG file shown with `<img>`, an inline `<svg>`, or the only one of either in a textless wrapper. Their stroke colour and weight and their fill against the drawn shapes of the SVG as the browser computes them, so attributes, inline styles, `<style>` rules and classes, inheritance from `<g>`, `currentColor` (black in an `<img>`, the element's colour inline) and the viewBox scale all resolve. An SVG file is computed in a blank page of the same browser, so the page's CSP cannot block its `<style>`. Not resolved: shapes behind `<use>`, and a transform that scales a stroke |
 | every node | found but not shown (`display: none`, `visibility: hidden`) is reported as hidden |
 | auto layout | gap and padding as laid out, from the box to the children and between them, so margins or `gap` both count. A side is checked where Figma fixes it: the start or end it is aligned to, both when the frame hugs its content, and centred content must sit as far from both padded sides. An INSIDE stroke included in the layout adds to its side's padding; a border the build draws where Figma has no stroke counts as a child (a divider line); a child that is only a text counts by its content box (a padded table cell) |
 
@@ -184,6 +242,96 @@ column (`12 ✓ · 4 without an element`): tag them to check them. A node the bu
 are compared). One element may carry several ids (`data-node-id="2:197 2:198"`) when the build merges Figma
 frames. `--max-style=<count>` fails a section with more differences (0: every
 value must be Figma's), and `maxStyle` on a section allows its known ones.
+
+## Hotspots
+
+A large section can hold one small mistake; its mismatch says how much differs, not where. Hotspots group the
+section's marked pixels (pixelmatch's red and blue, the colour check's magenta, the rows below the capture):
+
+1. marked pixels within 3 px of each other form a cluster (a word's glyphs, a card's edge);
+2. clusters under 16 pixels are dropped (specks of text rasterisation);
+3. clusters within 6 px of each other join into one box (a line of text, an icon and its label);
+4. a box is a hotspot when it holds at least 10 % of the section's marked pixels.
+
+Rule 4 carries the method. Figma and Chromium draw text a little apart everywhere; that noise is spread over
+every line, and no box of it stands out, while one wrong element concentrates the mismatch. So a section has
+at most ten hotspots, a correct one usually none to three (measured on the corpus renders of correct builds),
+and a change spread over the whole section (a font size on every row) has none: the section numbers and the
+style check report that. A mistake inside a line of text is boxed together with that line. Every hotspot
+has its box in the section's pixels (`x`, `y`, `width`, `height`) and in the frame's (`frame`), its share of
+the section's mismatch, the share of its own box that differs, and how many of its pixels the colour check
+marked (`colour`). The report lists the top three of the sections that call for a look; the console shows
+the largest (for a colour failure, the one with the most recoloured pixels).
+
+## States
+
+A frame is drawn in one state. A hover, focus, pressed, checked, open or disabled state is usually its own
+frame or variant in Figma, with its own reference, and belongs in the same sections file:
+
+```json
+{
+  "reference": "checkout-375.png", "width": 375, "height": 812, "sections": [ ... ],
+  "states": [
+    { "name": "default" },
+    { "name": "menu-open", "reference": "checkout-menu-open-375.png", "actions": [{ "click": "#menu" }] },
+    { "name": "email-focus", "reference": "checkout-email-focus-375.png", "actions": [{ "focus": "#email" }] },
+    { "name": "terms-checked", "reference": "checkout-terms-375.png", "actions": [{ "check": "#terms" }] },
+    { "name": "disabled", "reference": "checkout-disabled-375.png", "url": "/preview/checkout?disabled=1" }
+  ]
+}
+```
+
+- Each state is a screen named `<id>--<state>` (`checkout--menu-open`), with its artifacts under that name;
+  `pixel-diff checkout` runs every state, `pixel-diff checkout--menu-open` one. A file without `states`
+  works as before, named `<id>`.
+- A state takes the file's reference, size, sections and url unless it sets its own `reference`, `width`,
+  `height`, `sections`, `url` or `node`. Every state but `default` needs its own reference.
+- Actions, in order, after the page loaded, with animations already frozen: `{"hover": sel}`,
+  `{"click": sel}`, `{"focus": sel}`, `{"check": sel}`, `{"uncheck": sel}`, `{"fill": sel, "value": "…"}`,
+  `{"select": sel, "value": "…"}`, `{"press": "Tab"}` (the focused element) or `{"press": "Enter", "on": sel}`,
+  `{"mouse": [x, y]}`, `{"wait": ms}` (up to 10 000) and `{"waitFor": sel}`. A selector must match exactly one
+  element; a mistyped action or a missing element is an error, never a silent default state.
+- `focus` focuses from script, which shows `:focus` but, on a button or a link, not `:focus-visible`; for a
+  keyboard focus ring use `{"press": "Tab"}`. A `click` leaves the pointer over the element: add
+  `{"mouse": [0, 0]}` when the design draws the clicked state without hover.
+- A state no action can reach (disabled, loading, an error from the API) comes from its preview route: give
+  the state its own `url`.
+- Styles: `styles/<id>--<state>.json`; the default state also uses `styles/<id>.json`.
+- The spacing audit covers every state; the responsive audit opens each sections file in its default state.
+
+It is not an end-to-end test framework: no assertions on behaviour, no flows across pages. Each state is one
+more deterministic capture of what its Figma frame draws.
+
+## Independent review
+
+The checks measure what they were built to measure; a wrong icon, a text that says something else or items
+in the wrong order can pass them. An optional review looks for those unknowns without touching the verdict:
+
+```bash
+node scripts/figma-pixel/review-context.mjs
+```
+
+writes `diff/review-context.json`: per screen its verdict, reference, capture and console errors; per
+section its boxes, geometry, mismatch, colour pair, style differences, texts not found, spacing flags,
+hotspots, checks and crop files; and the responsive findings. Its `task` asks the reviewer (a fresh agent
+that did not build the screen, or a person) to open the images and report, as JSON with frame boxes, only
+problems the checks did not report. Nothing in CI depends on it: a review's findings are leads to verify in
+the images and to fix, or to turn into a check or a known entry.
+
+## Drift between runs
+
+Figma is the reference of every check. `drift.mjs` answers another question: is this build better or worse
+than the last one?
+
+```bash
+node scripts/figma-pixel/drift.mjs --against baseline.json --save baseline.json
+```
+
+`--save` writes a small snapshot of this run (per section Δ top, Δ height, mismatch, colour, style count;
+per screen the new responsive findings); `--against` compares this run with one and writes `diff/drift.md`
+and `diff/drift.json`: **Regression** (`hero: mismatch % 0.41 → 2.84 (+2.43 pp)`, `style differences 0 → 3`),
+**Improvement** and other changes. Changes within a re-run's noise (0.5 pp of mismatch, 0.1 pp of colour) are
+left out. Keep the snapshot as an artifact of the main branch or commit it; drift never fails a job.
 
 ## Other phone sizes
 
@@ -235,9 +383,9 @@ another OS):
 
 ```json
 {
-  "card-balance": [
+  "account": [
     {
-      "finding": "text overflow: [bank-card] span «12 480,00 ₽»",
+      "finding": "text overflow: [card] span «1 234,56 €»",
       "maxPx": { "Small Android": 3, "Android": 3 },
       "reason": "the design's amount is wider than its column and masked"
     }
@@ -352,11 +500,23 @@ check. Upload
 - Web only (Chromium through Playwright), device scale factor 1. The pixel check compares one viewport
   per sections file (add another file with its own reference for another width); other sizes get the
   responsive audit, which finds breakage but has no reference to compare against.
-- A frame is compared in its static state; hover, focus and open menus need their own preview route.
+- A frame is compared in its static state; other states need their own reference and actions or route
+  ([States](#states)). Motion is frozen, never compared.
+- The `[data-section]` element must span its band: the same pixels with the band's space as a margin
+  outside the element move its box, and the geometry and spacing report it (the one false positive of the
+  corpus's equivalence benchmark).
+- Hotspots localise what stands out of a section's mismatch; a mistake inside a line of text is boxed with
+  that line, and one smaller than 16 pixels is counted but not localised.
+- Text is matched by exact text (or `data-node-id`); a translated or reformatted text without its id is
+  listed as not found, never matched to another text.
 - Fonts must match: install the design's font files in the app, or the text sections will stay high.
 - Without `styles/<id>.json`, the pixel checks cannot see the colour of small text (glyph strokes are
   never flat), a radius changed by a few pixels (a 1 px band at the corners) or a font weight: export the
   styles (see [Style check](#style-check)): with them the corpus benchmark detects all 168 realistic mistakes,
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
-  as "no known blind spot left", not as a detection rate on other designs. The style check does not compare
+  as "no known blind spot left", not as a detection rate on other designs. The external corpus
+  (`corpus/external/`, 18 screens of two projects the checks were not built on) measures that: 143 of 230
+  generated mistakes, 48 of 52 where Figma's values were exported. On the false-positive
+  side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
+  SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare
   a gradient's angle (the colour check sees a wrong one) nor a raster image's content.

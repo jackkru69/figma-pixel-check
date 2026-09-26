@@ -4,3 +4,7 @@ corpus/**/design/diff/
 corpus/**/design/SPACING-AUDIT.md
 corpus/**/.bench.config.json
 corpus/bench-results.json
+# External cases are local unless their licence allows otherwise (corpus/external/README.md, rule 6):
+# only the README is committed; add an openly licensed case with git add -f.
+corpus/external/*
+!corpus/external/README.md

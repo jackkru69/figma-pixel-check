@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "colour-notation",
+    "note": "rgb() and hsl() instead of hex",
+    "css": ".tile--cool-500 { background: rgb(107 114 128) !important; } .tile--cool-400 { background: hsl(218 11% 65%) !important; } .text-primary { color: rgb(16, 24, 40) !important; }"
+  },
+  {
+    "kind": "grid-vs-flex",
+    "note": "swatches in a grid with space-between instead of flexbox",
+    "css": ".swatches { display: grid !important; grid-template-columns: repeat(6, 48px); justify-content: space-between; }"
+  }
+]

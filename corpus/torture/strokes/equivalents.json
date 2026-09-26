@@ -1,0 +1,22 @@
+[
+  {
+    "kind": "border-vs-inset-shadow",
+    "note": "the 1 px inside stroke as a border (border-box) instead of an inset shadow and padding",
+    "css": ".card--inside { box-shadow: none !important; border: 1px solid #d0d5dd; padding: 0 20px !important; }"
+  },
+  {
+    "kind": "rings-vs-outline",
+    "note": "the centred 2 px stroke as an inset and an outer 1 px ring instead of an outline",
+    "css": ".card--center { outline: none !important; box-shadow: inset 0 0 0 1px #d0d5dd, 0 0 0 1px #d0d5dd; }"
+  },
+  {
+    "kind": "outline-vs-ring",
+    "note": "the outside 2 px stroke as an outline instead of a spread shadow",
+    "css": ".card--outside { box-shadow: none !important; outline: 2px solid #d0d5dd; outline-offset: 0; }"
+  },
+  {
+    "kind": "literal-vs-variable",
+    "note": "literal colour instead of the token",
+    "css": ".label { color: #101828 !important; }"
+  }
+]

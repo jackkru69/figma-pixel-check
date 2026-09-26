@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "unitless-line-height",
+    "note": "line heights as ratios instead of px",
+    "css": ".title { line-height: 1.2142857 !important; } .headline { line-height: 1.2727273 !important; } .body { line-height: 1.2941176 !important; }"
+  },
+  {
+    "kind": "em-letter-spacing",
+    "note": "letter spacing in em instead of px",
+    "css": ".caption { letter-spacing: 0.0333333em !important; } .display { letter-spacing: 0.0117647em !important; }"
+  },
+  {
+    "kind": "font-shorthand",
+    "note": "the font shorthand instead of longhands (it resets font-optical-sizing, which the page sets, so that is set again)",
+    "css": ".display { font: 700 34px/41px Inter, sans-serif !important; font-optical-sizing: none !important; letter-spacing: 0.4px; }"
+  }
+]

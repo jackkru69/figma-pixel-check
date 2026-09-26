@@ -1,11 +1,15 @@
-/* global CSS, DOMParser, document, fetch, getComputedStyle, Node, SVGElement -- used inside page.evaluate callbacks that run in the browser */
+/* global CSS, DOMParser, document, getComputedStyle, Node, SVGElement, window -- used inside page.evaluate callbacks that run in the browser */
 // Style check for pixel-diff.mjs: Figma's own values (styles/<id>.json, exported with figma-styles.js through
 // use_figma) against the computed styles of the page. Pixels cannot see a wrong font weight, a 12 → 8 radius
 // or a neighbouring text colour; the values can.
 //
-// Figma text nodes are found by their text inside their section (the n-th equal text for the n-th node);
-// any other node through data-node-id="<id>" on its element, as get_design_context writes it (one element may
-// list several ids, space-separated). Auto Layout gap and padding are compared with where the children
+// Every node is found through data-node-id="<id>" on its element first, as get_design_context writes it (one
+// element may list several ids, space-separated), texts too. A text without one is found by its text inside
+// its section: the whole text, compared without spaces and case, never a part of it. Equal texts in one
+// section (three "Edit" buttons) pair up with the elements by where they are, not by DOM order; a text the
+// build splits into inline elements ("Hello <b>John</b>") is found on the element that holds all of it, and
+// Figma's own split ("Hello" + "John") on the element holding each part. Visible elements win over hidden
+// ones (a desktop copy kept in the DOM). Auto Layout gap and padding are compared with where the children
 // actually are, so margins, gap or padding all count as long as the result is the same.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -49,17 +53,42 @@ export function readFigmaStyles(dir, id, sections) {
     inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
   const parentOf = (node, index) =>
     nodes.filter((other, i) => i < index && holds(other, node)).sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
+  // Hidden in Figma itself: a layer painted later (after it in the file's order, so above it) with an opaque
+  // fill covers the whole of it. The design does not show it, so the build need not have it.
+  const opaque = (node) =>
+    !node.isMask &&
+    node.type !== 'TEXT' &&
+    (node.effectiveOpacity ?? node.opacity ?? 1) >= 0.999 &&
+    (node.fills ?? []).some(
+      (fill) =>
+        (fill.opacity ?? 1) >= 0.999 &&
+        (fill.type === 'SOLID' || (fill.type?.startsWith('GRADIENT_') && (fill.stops ?? []).every((stop) => (stop.alpha ?? 1) >= 0.999))),
+    );
+  const covers = (outer, inner) =>
+    inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
+  const occluded = (node, index) => nodes.some((other, i) => i > index && opaque(other) && covers(other, node) && !covers(node, other));
+  const parents = nodes.map((node, index) => parentOf(node, index));
   return nodes
     .map((node, index) => ({
       ...node,
       place: placeOf(node),
-      flow: node.layoutPositioning !== 'ABSOLUTE' && Boolean(parentOf(node, index)?.layoutMode),
+      flow: node.layoutPositioning !== 'ABSOLUTE' && Boolean(parents[index]?.layoutMode),
+      hiddenInFigma: occluded(node, index),
+      childCount: parents.filter((parent) => parent === node).length,
     }))
-    .filter((node) => node.place && (node.type === 'TEXT' ? node.characters?.trim() : true));
+    .filter((node) => node.place && !node.hiddenInFigma && (node.type === 'TEXT' ? node.characters?.trim() : true));
 }
 
-/** What to look up for each Figma node: text by its text, anything else by its id. */
+/** What to look up for each Figma node: its id, and a text also by its text and where it is in its section. */
 export function requestsFor(nodes, sectionNames) {
+  // A node that paints something (a fill, a stroke, a shadow) can be found by its box when it has no id; two such
+  // nodes on the same box (a frame and its background rectangle) cannot tell which element is theirs.
+  const paints = (node) =>
+    node.type !== 'TEXT' &&
+    ((node.fills ?? []).some((fill) => fill.type === 'SOLID' || fill.type?.startsWith('GRADIENT_')) ||
+      (node.strokes ?? []).length > 0 ||
+      (node.effects ?? []).some((effect) => effect.type.endsWith('SHADOW')));
+  const same = (a, b) => ['x', 'y', 'width', 'height'].every((key) => Math.abs(a[key] - b[key]) <= 1);
   return nodes.map((node) => ({
     id: node.id,
     type: node.type,
@@ -67,35 +96,117 @@ export function requestsFor(nodes, sectionNames) {
     section: sectionNames[node.place.index],
     occurrence: sectionNames.slice(0, node.place.index).filter((name) => name === sectionNames[node.place.index]).length,
     layout: Boolean(node.layoutMode),
+    // Across in the frame's pixels, down from the section's top.
+    at: { x: node.x, y: node.y - node.place.section.top },
+    box: paints(node) && !nodes.some((other) => other !== node && paints(other) && same(other, node))
+      ? { x: node.x, y: node.y - node.place.section.top, width: node.width, height: node.height }
+      : null,
   }));
 }
 
 /** Runs in the page: finds the element of every Figma node and reads what the check compares. */
 export async function readDom(requests) {
-  const squash = (text) => text.replace(/\s+/g, '').toLowerCase();
+  // Spaces, soft hyphens and zero-width characters do not count, nor does case (text-transform is checked apart).
+  const squash = (text) => text.replace(/[\s\u00AD\u200B-\u200D\u2060\uFEFF]+/g, '').toLowerCase();
   const sectionsByName = new Map();
   for (const element of document.querySelectorAll('[data-section]')) {
     if (element.getClientRects().length === 0) continue;
     const name = element.getAttribute('data-section');
     sectionsByName.set(name, [...(sectionsByName.get(name) ?? []), element]);
   }
+  const shown = (element) => element.getClientRects().length > 0;
+  const ownText = (element) =>
+    [...element.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join('');
+  // The deepest of a list: no other element of the list inside it.
+  const deepest = (list) => list.filter((element) => !list.some((other) => other !== element && element.contains(other)));
+  // 1. Every node with a data-node-id, texts included.
+  const elements = requests.map((request) => (request.id ? document.querySelector(`[data-node-id~="${CSS.escape(request.id)}"]`) : null));
+  const matchedBy = elements.map((element) => (element ? 'id' : null));
   // One element per Figma text; a frame found by its id may also be the element of its own text (a button).
-  const taken = new Set();
-  const ownText = (element) => [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
-  const find = (request) => {
-    if (request.id) {
-      const explicit = document.querySelector(`[data-node-id~="${CSS.escape(request.id)}"]`);
-      if (explicit || request.type !== 'TEXT') return explicit;
-    }
+  const taken = new Set(elements.filter((element, i) => element && requests[i].type === 'TEXT'));
+  // 2. The other texts by their text, equal texts of a section together.
+  const groups = new Map();
+  requests.forEach((request, i) => {
+    if (request.type !== 'TEXT' || elements[i] || !request.text) return;
+    const key = `${request.section}\u0000${request.occurrence}\u0000${squash(request.text)}`;
+    groups.set(key, [...(groups.get(key) ?? []), i]);
+  });
+  for (const indexes of groups.values()) {
+    const request = requests[indexes[0]];
     const section = sectionsByName.get(request.section)?.[request.occurrence];
-    if (!section) return null;
+    if (!section) continue;
     const want = squash(request.text);
-    // The deepest element that holds exactly this text and some of it itself (not a wrapper around it).
-    const candidates = [section, ...section.querySelectorAll('*')].filter(
-      (element) => !taken.has(element) && squash(element.textContent ?? '') === want && ownText(element),
+    const all = [section, ...section.querySelectorAll('*')].filter((element) => !taken.has(element) && !element.closest('svg, script, style, template'));
+    const whole = all.filter((element) => squash(element.textContent ?? '') === want);
+    // A form field shows its value, or its placeholder while it is empty.
+    const fieldText = (element) => (['INPUT', 'TEXTAREA'].includes(element.tagName) ? element.value || element.placeholder || '' : null);
+    // The whole text with some of it in the element itself; the element whose own text is Figma's part of a
+    // text split in Figma; the element wrapping inline pieces that together are the text; a form field.
+    const tiers = [
+      ['text', deepest(whole.filter((element) => squash(ownText(element)) !== ''))],
+      ['split', all.filter((element) => element.children.length > 0 && squash(ownText(element)) === want && !whole.includes(element))],
+      ['wrapper', deepest(whole)],
+      ['field', all.filter((element) => fieldText(element) !== null && squash(fieldText(element)) === want)],
+    ];
+    const [how, found] = tiers.find(([, list]) => list.length) ?? [null, []];
+    if (!found.length) continue;
+    const candidates = found.some(shown) ? found.filter(shown) : found;
+    const top = section.getBoundingClientRect().top;
+    const place = (element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.left + window.scrollX, y: rect.top - top };
+    };
+    // Nearest pairs first: the n-th "Edit" of the design with the element where it is drawn.
+    const pairs = indexes
+      .flatMap((i) => candidates.map((element) => {
+        const at = place(element);
+        return { i, element, distance: Math.hypot(at.x - requests[i].at.x, at.y - requests[i].at.y) };
+      }))
+      .sort((a, b) => a.distance - b.distance);
+    for (const { i, element } of pairs) {
+      if (elements[i] || taken.has(element)) continue;
+      elements[i] = element;
+      matchedBy[i] = how === 'field' ? (element.value ? 'value' : 'placeholder') : indexes.length > 1 || candidates.length > 1 ? `${how} by position` : how;
+      taken.add(element);
+    }
+  }
+  // 3. A node that paints, without an id, by its box: the one painted element of its section at the same place
+  // and size (within 1 px). Two painted candidates, or none, leave it unmatched.
+  const painted = (element) => {
+    const s = getComputedStyle(element);
+    return (
+      !/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(s.backgroundColor) ||
+      s.backgroundImage !== 'none' ||
+      ['Top', 'Right', 'Bottom', 'Left'].some((side) => s[`border${side}Style`] !== 'none' && parseFloat(s[`border${side}Width`]) > 0) ||
+      s.boxShadow !== 'none' ||
+      (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0)
     );
-    return candidates.find((element) => !candidates.some((other) => other !== element && element.contains(other))) ?? null;
   };
+  // Elements of other frames are taken; the element of a text may also be its frame's (a button's label).
+  const claimed = new Set(elements.filter((element, i) => element && requests[i].type !== 'TEXT'));
+  requests.forEach((request, i) => {
+    if (elements[i] || !request.box) return;
+    const section = sectionsByName.get(request.section)?.[request.occurrence];
+    if (!section) return;
+    const top = section.getBoundingClientRect().top;
+    const fits = [section, ...section.querySelectorAll('*')].filter((element) => {
+      if (claimed.has(element) || element.closest('svg') !== null && element.tagName.toLowerCase() !== 'svg') return false;
+      const rect = element.getBoundingClientRect();
+      return (
+        Math.abs(rect.left + window.scrollX - request.box.x) <= 1 &&
+        Math.abs(rect.top - top - request.box.y) <= 1 &&
+        Math.abs(rect.width - request.box.width) <= 1 &&
+        Math.abs(rect.height - request.box.height) <= 1 &&
+        painted(element)
+      );
+    });
+    if (fits.length !== 1) return;
+    elements[i] = fits[0];
+    matchedBy[i] = 'box';
+    claimed.add(fits[0]);
+  });
   const box = (rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
   const opacityOf = (element) => {
     let opacity = 1;
@@ -154,7 +265,7 @@ export async function readDom(requests) {
         const s = getComputedStyle(child);
         return s[`border${side}Width`] === first[`border${side}Width`] && s[`border${side}Color`] === first[`border${side}Color`] && s[`border${side}Style`] !== 'none';
       });
-      return same ? { width: parseFloat(first[`border${side}Width`]), color: first[`border${side}Color`], style: first[`border${side}Style`] } : null;
+      return same ? { width: parseFloat(first[`border${side}Width`]), color: plain(first[`border${side}Color`]), style: first[`border${side}Style`] } : null;
     });
     return list;
   };
@@ -166,6 +277,23 @@ export async function readDom(requests) {
     'outlineWidth', 'outlineStyle', 'outlineColor', 'outlineOffset', 'boxShadow', 'filter', 'backdropFilter', 'clipPath',
     'width', 'height', 'opacity',
   ];
+  // Colours as rgb()/rgba(), whatever the build writes: oklab() from Tailwind's opacity modifiers, oklch(),
+  // color(), lab()... converted by the browser itself (a 1 px canvas), so the check reads every notation alike.
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const toRgb = (value) => {
+    context.clearRect(0, 0, 1, 1);
+    context.fillStyle = 'rgba(0, 0, 0, 0)';
+    context.fillStyle = value;
+    context.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+    return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 1000) / 1000})`;
+  };
+  const MODERN = /(?:oklab|oklch|lab|lch|color|hwb|hsla?)\([^()]*\)/g;
+  const plain = (value) => (typeof value === 'string' && /(?:oklab|oklch|lab|lch|color|hwb|hsla?)\(/.test(value) ? value.replace(MODERN, toRgb) : value);
+  const read = (style) => Object.fromEntries(KEYS.map((key) => [key, plain(style[key])]));
   // A node drawn by a pseudo-element: data-node-id-before / data-node-id-after on its element.
   const pseudoOf = (id) => {
     for (const which of ['before', 'after']) {
@@ -174,48 +302,27 @@ export async function readDom(requests) {
     }
     return null;
   };
-  // The shapes of an SVG shown with <img>: their stroke, stroke width (in rendered px) and fill.
-  const svgShapes = async (img) => {
-    const src = img.currentSrc || img.src;
-    if (!/\.svg(\?|#|$)|^data:image\/svg/i.test(src)) return null;
-    try {
-      const svg = new DOMParser().parseFromString(await (await fetch(src)).text(), 'image/svg+xml').documentElement;
-      const viewBox = (svg.getAttribute('viewBox') ?? '').split(/[\s,]+/).map(parseFloat);
-      const scale = img.getBoundingClientRect().width / (viewBox[2] || parseFloat(svg.getAttribute('width')) || img.naturalWidth || 1);
-      const inherited = (shape, name) => {
-        for (let node = shape; node && node.getAttribute; node = node.parentNode) {
-          const value = node.getAttribute(name) ?? node.style?.getPropertyValue(name);
-          if (value) return value;
-        }
-        return null;
-      };
-      // Named colours and currentColor (black in an <img>) as rgb(), the way the check reads colours.
-      const probe = document.createElement('i');
-      document.body.append(probe);
-      const rgb = (value) => {
-        if (!value || value === 'none') return value;
-        probe.style.color = value === 'currentColor' ? '#000' : value;
-        return getComputedStyle(probe).color;
-      };
-      const shapes = [...svg.querySelectorAll('path, circle, rect, line, polyline, polygon, ellipse')].map((shape) => ({
-        stroke: rgb(inherited(shape, 'stroke')),
-        strokeWidth: parseFloat(inherited(shape, 'stroke-width') ?? '1') * scale,
-        fill: rgb(inherited(shape, 'fill') ?? '#000000'),
-      }));
-      probe.remove();
-      return shapes;
-    } catch {
-      return null;
-    }
+  // The shapes of an icon: their stroke, stroke width (in rendered px) and fill, as the browser computes them
+  // (svgShapes). An inline <svg> is computed here, in the page; an SVG file shown with <img> is only located
+  // here and computed by resolveIcons() in a blank page, where the page's CSP cannot block the file's own
+  // <style>. An icon is an <img> of an SVG, an inline <svg>, or the only one of either inside a textless
+  // wrapper (<span class="icon"><svg>…</svg></span>).
+  const iconOf = (element) => {
+    const inner = element.tagName === 'IMG' || element.tagName.toLowerCase() === 'svg'
+      ? [element]
+      : element.textContent.trim()
+        ? []
+        : [...element.querySelectorAll('img, svg')].filter((e) => !e.parentElement.closest('svg'));
+    if (inner.length !== 1) return null;
+    const [icon] = inner;
+    const rendered = icon.getBoundingClientRect().width;
+    if (icon.tagName !== 'IMG') return { shapes: svgShapes(icon, rendered) };
+    const src = icon.currentSrc || icon.src;
+    return /\.svg(\?|#|$)|^data:image\/svg/i.test(src) ? { svgFile: { url: src, rendered } } : null;
   };
-  const elements = requests.map((request) => {
-    const element = find(request);
-    if (element && request.type === 'TEXT') taken.add(element);
-    return element;
-  });
   const texts = new Set(elements.filter((element, i) => element && requests[i].type === 'TEXT'));
   const frames = new Set(elements.filter((element, i) => element && requests[i].type !== 'TEXT'));
-  return Promise.all(requests.map(async (request, i) => {
+  return requests.map((request, i) => {
     const element = elements[i];
     const sectionElement = sectionsByName.get(request.section)?.[request.occurrence];
     const sectionBox = sectionElement ? box(sectionElement.getBoundingClientRect()) : null;
@@ -223,27 +330,110 @@ export async function readDom(requests) {
       const pseudo = request.type !== 'TEXT' ? pseudoOf(request.id) : null;
       if (!pseudo) return null;
       const style = getComputedStyle(pseudo.element, `::${pseudo.which}`);
-      return { pseudo: pseudo.which, opacity: opacityOf(pseudo.element) * parseFloat(style.opacity), children: [], style: Object.fromEntries(KEYS.map((key) => [key, style[key]])) };
+      return { pseudo: pseudo.which, opacity: opacityOf(pseudo.element) * parseFloat(style.opacity), children: [], style: read(style) };
     }
     // Found but not shown (display: none, visibility: hidden): the design shows it.
     if (element.getClientRects().length === 0 || element.checkVisibility?.({ visibilityProperty: true }) === false) {
       return { hidden: true, children: [], style: {} };
     }
-    const style = getComputedStyle(element);
+    // A placeholder is drawn with the field's ::placeholder style.
+    const field = ['value', 'placeholder'].includes(matchedBy[i]);
+    const style = getComputedStyle(element, matchedBy[i] === 'placeholder' ? '::placeholder' : null);
     const kids = request.layout || request.type !== 'TEXT' ? children(element, style) : [];
+    const shownText = field ? element.value || element.placeholder : element.textContent ?? '';
     return {
+      field,
       sectionBox,
-      shapes: element.tagName === 'IMG' && request.type !== 'TEXT' ? await svgShapes(element) : null,
+      ...(request.type !== 'TEXT' ? iconOf(element) : null),
+      matchedBy: matchedBy[i],
       tag: element.tagName.toLowerCase(),
       svg: element instanceof SVGElement,
-      text: transformText((element.textContent ?? '').trim().replace(/\s+/g, ' '), style.textTransform),
+      text: transformText(shownText.trim().replace(/\s+/g, ' '), style.textTransform),
       box: box(element.getBoundingClientRect()),
       opacity: opacityOf(element),
       children: request.layout ? [...kids] : [],
       childSides: kids.sides ?? [],
-      style: Object.fromEntries(KEYS.map((key) => [key, style[key]])),
+      style: read(style),
     };
-  }));
+  });
+}
+
+/**
+ * Runs in the browser: the drawn shapes of an SVG element and their computed stroke, stroke width (scaled from
+ * the viewBox to the rendered width) and fill. Presentation attributes, inline styles, <style> rules and
+ * classes, inheritance from <g> and currentColor resolve as when drawn; shapes in <defs>, masks and clip paths
+ * and hidden ones are left out. Not resolved: shapes behind <use>, and transforms that scale a stroke.
+ */
+export function svgShapes(svg, rendered) {
+  // Colours in any notation as rgb(), converted by the browser (see readDom).
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const rgb = (value) => {
+    if (!/^(?:oklab|oklch|lab|lch|color|hwb|hsla?)\(/.test(value)) return value;
+    context.clearRect(0, 0, 1, 1);
+    context.fillStyle = value;
+    context.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+    return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 1000) / 1000})`;
+  };
+  const viewBox = (svg.getAttribute('viewBox') ?? '').split(/[\s,]+/).map(parseFloat);
+  const scale = rendered / (viewBox[2] || parseFloat(svg.getAttribute('width')) || rendered || 1);
+  return [...svg.querySelectorAll('path, circle, rect, line, polyline, polygon, ellipse')]
+    .filter((shape) => !shape.closest('defs, clipPath, mask, symbol, pattern, marker'))
+    .map((shape) => getComputedStyle(shape))
+    .filter((cs) => cs.display !== 'none' && cs.visibility !== 'hidden')
+    .map((cs) => ({ stroke: rgb(cs.stroke), strokeWidth: parseFloat(cs.strokeWidth) * scale, fill: rgb(cs.fill) }));
+}
+
+/** The text of an SVG file: fetched without the page (and its CSP), or decoded from a data: URL. */
+async function svgText(context, url) {
+  if (url.startsWith('data:')) {
+    const [head, body] = [url.slice(0, url.indexOf(',')), url.slice(url.indexOf(',') + 1)];
+    return head.endsWith(';base64') ? Buffer.from(body, 'base64').toString('utf8') : decodeURIComponent(body);
+  }
+  const response = await context.request.get(url);
+  return response.ok() ? response.text() : null;
+}
+
+/**
+ * The shapes of the SVG files readDom() located, computed in a blank page of the same browser: the file is
+ * parsed there, stripped of scripts and event handlers, and computed in a closed shadow root, with the
+ * black currentColor of an <img>.
+ */
+export async function resolveIcons(context, doms) {
+  const files = doms.filter((dom) => dom?.svgFile);
+  if (!files.length) return doms;
+  const page = await context.newPage();
+  try {
+    for (const dom of files) {
+      const text = await svgText(context, dom.svgFile.url).catch(() => null);
+      dom.shapes = text
+        ? await page.evaluate(`(() => {
+            const svgShapes = ${svgShapes};
+            const svg = new DOMParser().parseFromString(${JSON.stringify(text)}, 'image/svg+xml').documentElement;
+            if (svg.nodeName !== 'svg') return null;
+            for (const element of svg.querySelectorAll('script, foreignObject')) element.remove();
+            for (const element of [svg, ...svg.querySelectorAll('*')]) {
+              for (const attribute of [...element.attributes]) if (/^on/i.test(attribute.name)) element.removeAttribute(attribute.name);
+            }
+            const host = document.createElement('div');
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'all:initial;color:#000';
+            host.attachShadow({ mode: 'closed' }).append(wrapper);
+            wrapper.append(document.importNode(svg, true));
+            document.body.append(host);
+            const shapes = svgShapes(wrapper.firstElementChild, ${Number(dom.svgFile.rendered)});
+            host.remove();
+            return shapes;
+          })()`)
+        : null;
+    }
+  } finally {
+    await page.close();
+  }
+  return doms;
 }
 
 const LINEAR = (v) => {
@@ -287,7 +477,10 @@ function parseShadows(value) {
     const lengths = part.replace(COLOR_FN, '').match(/-?[\d.]+px/g)?.map(parseFloat) ?? [];
     const [x = 0, y = 0, blur = 0, spread = 0] = lengths;
     return { color, x, y, blur, spread, inset: /\binset\b/.test(part) };
-  });
+  })
+    // Shadows that draw nothing: transparent, or no offset, blur or spread (Tailwind lists such placeholders
+    // for its rings and shadows on every element).
+    .filter((shadow) => shadow.color?.alpha > 0 && (shadow.x || shadow.y || shadow.blur || shadow.spread));
 }
 const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
 
@@ -298,7 +491,8 @@ const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
  * region's own edge), as the element of a band may be narrower than the band.
  */
 function position(node, dom, add) {
-  if (!dom.sectionBox || !node.place || node.flow) return;
+  // A form field's text sits where its padding puts it: the field is the box, not the text.
+  if (!dom.sectionBox || !node.place || node.flow || dom.field) return;
   const region = 'left' in node.place.section;
   const x = dom.box.left - (region ? dom.sectionBox.left : 0) - (node.x - (region ? node.place.section.left : 0));
   const y = dom.box.top - dom.sectionBox.top - (node.y - node.place.section.top);
@@ -339,7 +533,8 @@ function differences(node, dom) {
     if (node.fontSize != null && !near(parseFloat(s.fontSize), node.fontSize, PX)) add('font-size', node.fontSize, round(parseFloat(s.fontSize)));
     if (node.fontWeight != null && Number(s.fontWeight) !== node.fontWeight) add('font-weight', node.fontWeight, Number(s.fontWeight));
     const lh = node.lineHeight;
-    if (lh && node.fontSize != null) {
+    // A one-line input places its text by its height and padding; its line-height draws nothing.
+    if (lh && node.fontSize != null && !(dom.field && dom.tag === 'input')) {
       // AUTO is the font's own line: the height of a one-line Figma text box.
       const single = node.height < node.fontSize * 1.8;
       const want = lh.unit === 'PIXELS' ? lh.value : lh.unit === 'PERCENT' ? (node.fontSize * lh.value) / 100 : single ? node.height : null;
@@ -369,6 +564,17 @@ function differences(node, dom) {
     return off;
   }
 
+  if (node.type === 'LINE') {
+    // A line is its stroke: a border, or a thin box filled with its colour.
+    const stroke = (node.strokes ?? []).find((paint) => paint.type === 'SOLID');
+    if (stroke) {
+      const drawn = [parseColor(s.backgroundColor), ...SIDES.filter((side) => s[`border${side}Style`] !== 'none').map((side) => parseColor(s[`border${side}Color`]))];
+      if (!drawn.some((color) => sameColor(stroke.color, stroke.opacity, color))) {
+        add('line', showColor(stroke.color, stroke.opacity), drawn.filter((c) => c && c.alpha > 0).map(showDom).join(', ') || 'none');
+      }
+    }
+    return off;
+  }
   const width = dom.box.right - dom.box.left;
   const height = dom.box.bottom - dom.box.top;
   // The box first, on the axes Figma fixes (a hugging or filling size follows its text and its siblings): when
@@ -427,6 +633,7 @@ function differences(node, dom) {
   const weights = node.strokeWeights ?? (node.strokeWeight != null ? [0, 1, 2, 3].map(() => node.strokeWeight) : null);
   const shadows = parseShadows(s.boxShadow);
   const rings = shadows.filter((shadow) => shadow.x === 0 && shadow.y === 0 && shadow.blur === 0 && shadow.spread > 0);
+  const sideRings = new Set();
   if (stroke && weights && weights.some((w) => w > 0)) {
     const border = SIDES.map((side) => ({
       width: parseFloat(s[`border${side}Width`]),
@@ -467,20 +674,43 @@ function differences(node, dom) {
       else if (dashed && !['dashed', 'dotted'].includes(found.style)) add('stroke style', 'dashed', found.style);
       else if (node.strokeAlign && found.align !== node.strokeAlign) add('stroke align', node.strokeAlign.toLowerCase(), found.align.toLowerCase());
     } else {
+      // A side may also be an inset shadow moved by the weight towards the inside (inset 0 -1px 0 0 draws a
+      // 1 px bottom line).
+      const sideShadow = (i, w) =>
+        shadows.find(
+          (shadow) =>
+            shadow.inset &&
+            shadow.blur === 0 &&
+            shadow.spread === 0 &&
+            [
+              [0, w],
+              [-w, 0],
+              [0, -w],
+              [w, 0],
+            ][i].every((v, k) => near([shadow.x, shadow.y][k], v, PX)),
+        );
+      // No border on a side: none, or 0 px wide (a reset such as Tailwind's border: 0 solid).
+      const absent = (b) => !b || b.style === 'none' || !(b.width >= 0.5);
       weights.forEach((w, i) => {
         if (!w) return;
         const own = border[i];
         const drawn = dom.childSides?.[i];
-        const b = own.style === 'none' && drawn ? { ...drawn, color: parseColor(drawn.color) } : own;
+        const inset = absent(own) ? sideShadow(i, w) : null;
+        if (inset) sideRings.add(inset);
+        const b = inset
+          ? { width: w, color: inset.color, style: 'solid' }
+          : absent(own) && !absent(drawn)
+            ? { ...drawn, color: parseColor(drawn.color) }
+            : own;
         const side = SIDES[i].toLowerCase();
-        if (b.style === 'none' || !near(b.width, w, PX)) add(`stroke ${side}`, `${w} px ${showColor(stroke.color, alpha)}`, b.style === 'none' ? 'none' : `${b.width} px`);
+        if (absent(b) || !near(b.width, w, PX)) add(`stroke ${side}`, `${w} px ${showColor(stroke.color, alpha)}`, absent(b) ? 'none' : `${b.width} px`);
         else if (!sameColor(stroke.color, alpha, b.color)) add(`stroke ${side}`, showColor(stroke.color, alpha), showDom(b.color));
       });
     }
   }
 
   // Shadows and blurs: Figma's blur radius is 2σ, CSS blur() takes σ.
-  const soft = shadows.filter((shadow) => !rings.includes(shadow));
+  const soft = shadows.filter((shadow) => !rings.includes(shadow) && !sideRings.has(shadow));
   if (soft.length && !(node.effects ?? []).some((effect) => effect.type.endsWith('SHADOW'))) {
     add('shadow', 'none', soft.map((sh) => `${sh.inset ? 'inset ' : ''}${sh.x} ${sh.y} ${sh.blur} ${sh.spread} ${showDom(sh.color)}`).join(', '));
   }
@@ -514,6 +744,9 @@ function differences(node, dom) {
   // where Figma has no stroke is a child (a divider line), not padding.
   if (node.layoutMode && sized && dom.children.length) {
     const vertical = node.layoutMode === 'VERTICAL';
+    // Found by its box, the element's children need not be Figma's (a build may skip a wrapper frame): the gap
+    // is compared only when there are as many, the padding (content against the box) always.
+    const sameItems = dom.matchedBy !== 'box' || node.childCount === undefined || node.childCount === dom.children.length;
     const included = node.strokesIncludedInLayout ?? true;
     const strokeInset = (i) =>
       !included || !weights || node.strokeAlign !== 'INSIDE' ? 0 : (weights[i] ?? 0);
@@ -533,7 +766,7 @@ function differences(node, dom) {
     });
     items.sort((a, b) => (vertical ? a.top - b.top : a.left - b.left));
     const spaced = node.primaryAxisAlignItems === 'SPACE_BETWEEN';
-    if ((!node.layoutWrap || node.layoutWrap === 'NO_WRAP') && node.primaryAxisAlignItems && !spaced && items.length > 1) {
+    if (sameItems && (!node.layoutWrap || node.layoutWrap === 'NO_WRAP') && node.primaryAxisAlignItems && !spaced && items.length > 1) {
       const gaps = items.slice(1).map((item, i) => (vertical ? item.top - items[i].bottom : item.left - items[i].right));
       const wrong = gaps.find((gap) => !near(gap, node.itemSpacing, SPACING));
       if (wrong !== undefined) add('gap', node.itemSpacing, round(wrong));
@@ -594,8 +827,9 @@ function iconDifferences(node, shapes) {
 }
 
 /**
- * Per section: how many nodes were checked, what differs, and how many Figma nodes have no element
- * (texts not found are listed: a changed or missing text; other nodes just lack a data-node-id).
+ * Per section: how many nodes were checked (byId through data-node-id, byText by their text), what differs,
+ * and how many Figma nodes have no element (texts not found are listed: a changed or missing text; other
+ * nodes just lack a data-node-id).
  */
 export function compareStyles(nodes, doms) {
   const sections = new Map();
@@ -606,8 +840,15 @@ export function compareStyles(nodes, doms) {
     inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
   const iconOf = (node) =>
     icons.filter(({ node: frame }) => frame !== node && holds(frame, node)).sort((a, b) => a.node.width * a.node.height - b.node.width * b.node.height)[0];
+  // A text repeated in its section is labelled with its node id too, so a difference points at one of them.
+  const repeated = new Set(
+    nodes
+      .filter((node) => node.type === 'TEXT')
+      .map((node) => `${node.place.index} ${node.characters.trim()}`)
+      .filter((key, i, all) => all.indexOf(key) !== i),
+  );
   nodes.forEach((node, i) => {
-    const entry = sections.get(node.place.index) ?? { checked: 0, off: [], unmatched: 0 };
+    const entry = sections.get(node.place.index) ?? { checked: 0, off: [], unmatched: 0, byId: 0, byText: 0 };
     sections.set(node.place.index, entry);
     const dom = doms[i];
     const icon = !dom && node.type !== 'TEXT' ? iconOf(node) : null;
@@ -623,7 +864,10 @@ export function compareStyles(nodes, doms) {
       return;
     }
     entry.checked++;
-    const label = node.type === 'TEXT' ? `«${node.characters.trim().replace(/\s+/g, ' ').slice(0, 40)}»` : `${node.name} ${node.id}`;
+    if (dom.matchedBy === 'id') entry.byId++;
+    else if (dom.matchedBy) entry.byText++;
+    const text = `«${node.characters?.trim().replace(/\s+/g, ' ').slice(0, 40)}»`;
+    const label = node.type !== 'TEXT' ? `${node.name} ${node.id}` : repeated.has(`${node.place.index} ${node.characters.trim()}`) ? `${text} ${node.id}` : text;
     for (const difference of differences(node, dom)) entry.off.push({ node: node.id, label, ...difference });
   });
   return { sections, missingText };

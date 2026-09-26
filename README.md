@@ -3,11 +3,13 @@
 [![example](https://github.com/jackkru69/figma-pixel-check/actions/workflows/example.yml/badge.svg)](https://github.com/jackkru69/figma-pixel-check/actions/workflows/example.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Visual QA for Figma to web. It compares a built page with its Figma frame **section by section**:
-position and height, pixels, flat colours and Figma's own values (fonts, radii, strokes, shadows, gap,
-padding). Then it opens the page at six phone sizes and looks for what breaks there. It is plain Node and
-Playwright with limits for CI. It also ships as a [Claude Code](https://claude.com/claude-code) skill that
-runs the whole loop: read the frame, lay out the screen, check it, fix it, record what is left.
+Independent Figma fidelity verification and visual regression for web frontends, including the ones AI agents
+write. Claude, Codex, Cursor, Gemini or a person builds the screen; figma-pixel-check measures the result
+against its Figma frame **section by section**: position and height, pixels, flat colours and Figma's own
+values (fonts, radii, strokes, shadows, gap, padding), in every state the design draws. Then it opens the page
+at six phone sizes and looks for what breaks there. It is plain Node and Playwright, deterministic, with limits
+for CI. It also ships as a [Claude Code](https://claude.com/claude-code) skill that runs the whole loop: read
+the frame, lay out the screen, check it, fix it, record what is left.
 
 Most "pixel-perfect" checks compare whole screenshots. Then one block that is 8 px too tall turns
 everything below it red, and the number no longer tells you what is wrong. Here each screen is split into
@@ -32,7 +34,18 @@ report shows which section is off, whether its position, its height or its pixel
 | **Styles** | Figma's values against the computed styles: `hero: «Alex Kim» font-weight 600 → 500`, `action: button 9:5 radius 14 → 8`, `nav: gap 12 → 16` | pixels cannot tell a weight of 500 from 600, or a radius of 8 from 12 |
 | **Spacing** | margins, paddings, heights and gaps of each section, measured in both images | says which gap moved when a section's height is off |
 | **Responsive** | at 360–440 px: sideways scroll, elements cut by the screen edge or clipped, wider than their box, text that does not fit, content under pinned bars | the design is drawn at one width; accepted findings are pinned to their devices and size |
+| **States** | every check above for hover, focus, checked, open or disabled, each reached by a few actions (`hover`, `click`, `focus`, `check`, `press`…) or its own route | a frame draws one state; `checkout--menu-open` gets its own reference and artifacts |
 
+Around the verdicts, never deciding them:
+
+- **Hotspots**: boxes where a section's mismatch is (`x=214 y=16 w=92 h=44 — 18 %`), outlined on
+  `-hotspots.png`. Text rasterisation spread over every line makes none.
+- **Reports**: `report.md`, `results.json` with a verdict and the failures of every screen, and a static
+  `report.html` with Figma | build | diff | hotspots side by side and a slider. The CI log lists only the
+  failing sections, a few lines each.
+- **Drift**: `drift.mjs` compares this run with a saved snapshot of the last one: what got better or worse.
+- **Independent review**: `review-context.mjs` writes what the checks found, so a fresh agent can look for
+  what they did not.
 ## Use it without an agent
 
 The scripts need Node 20+, `@playwright/test`, `pixelmatch@7` and `pngjs@7`.
@@ -59,7 +72,7 @@ For each screen:
 Then:
 
 ```bash
-node scripts/figma-pixel/pixel-diff.mjs          # design/figma/diff/report.md
+node scripts/figma-pixel/pixel-diff.mjs          # design/figma/diff/report.html, report.md, results.json
 node scripts/figma-pixel/spacing-audit.mjs       # design/figma/SPACING-AUDIT.md
 node scripts/figma-pixel/responsive-audit.mjs    # design/figma/diff/responsive/
 ```
@@ -80,7 +93,21 @@ node scripts/figma-pixel/responsive-audit.mjs --skip-build --fail
 
 A difference kept on purpose gets its own `maxGeometry` / `maxMismatch` / `maxColor` / `maxStyle` and a
 `reason` on its section, so the tight limits hold everywhere else. A malformed limit or an unknown flag is
-an error, not a disabled check.
+an error, not a disabled check. A failure reads like this, and the rest is in `report.html`:
+
+```
+FAIL settings / profile-card
+  geometry: pass
+  styles: 2 differences (limit 0)
+    «Alex Kim» font-weight 600 → 500
+    card 9:5 radius 16 → 12
+  colour: pass
+  pixels: 3.4 % (limit 2 %)
+    hotspot: x=180 y=24 w=110 h=56 — 41.2 % of the box, 63 % of the section's mismatch
+```
+
+To see whether a change made things better or worse than the main branch, keep a snapshot:
+`drift.mjs --against baseline.json --save baseline.json`. It never fails the job: Figma stays the reference.
 
 ## Use it with Claude Code
 
@@ -131,32 +158,57 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
 | `pixel-diff.mjs [ids] [--skip-build] [--max-section=N] [--max-geometry=PX] [--max-color=N] [--max-style=N]` | builds, serves, captures and compares geometry, pixels, colours and Figma's values; writes `diff/report.md`, `results.json` and crops |
 | `spacing-audit.mjs` | margins, paddings, heights and gaps of every section, reference versus build (`SPACING-AUDIT.md`, `diff/spacing.json`) |
 | `responsive-audit.mjs [ids] [--fail] [--update-known]` | every screen at six phone sizes: a screenshot strip and the findings; accepted ones are pinned to their devices and size |
+| `drift.mjs --save <file> / --against <file>` | a snapshot of this run, or what changed since one (`diff/drift.md`); never fails |
+| `review-context.mjs` | `diff/review-context.json`: what the checks found and the files to look at, for an optional independent review |
 | `figma-styles.js` | read-only script for the Figma MCP `use_figma`: every node's values, for the style check |
 | `figma-boxes.py <node> [--sections]` | boxes of a frame's nodes from saved `get_metadata` XML, or a sections-file skeleton |
 | `serve-dist.mjs` | static server with an SPA fallback, used by `pixel-diff` |
 
 ## Tested on real Figma renders
 
-[`corpus/`](corpus) holds 12 frames drawn in Figma to be hard for this check: strokes of every alignment,
-type metrics, text at the wrapping point, shadows and blurs, neighbouring colours, fractional geometry, radii
-and masks, transparency, a list, a full screen with pinned bars, icons and a dense table. Each was built
-through the skill's own loop. They run in CI as regression fixtures, and `npm run bench` injects 168
-realistic mistakes into them to measure what the checks catch ([`corpus/BENCHMARK.md`](corpus/BENCHMARK.md)).
+[`corpus/`](corpus) has two groups, measured apart and never added up
+([`corpus/BENCHMARK.md`](corpus/BENCHMARK.md), `npm run bench`):
 
-Building them found the colour blind spot, text rendered unlike Figma on Linux, and responsive checks that
-missed clipped text and floating buttons. It also showed where pixels stop: font weight, text colour and
-radius. With the fixes and the style check, detection went from 84 of 167 to all 168. The corpus was built
-together with the checks, so that means no known blind spot is left, not a detection rate on other designs.
+- **Internal torture corpus**: 12 frames drawn in Figma to be hard for this check (strokes of every
+  alignment, type metrics, text at the wrapping point, shadows and blurs, neighbouring colours, fractional
+  geometry, radii and masks, transparency, a list, a full screen with pinned bars, icons, a dense table),
+  each built through the skill's own loop and run in CI as regression fixtures. **Detection: 168 of 168**
+  realistic mistakes injected into them. Building it found the colour blind spot, text rendered unlike Figma
+  on Linux, responsive checks that missed clipped text, and where pixels stop (font weight, text colour,
+  radius); detection went from 84 of 167 to 168. The corpus was built together with the checks, so this is an
+  upper bound: no known blind spot is left, not a detection rate on other designs.
+- **False positives on the same corpus: 1 of 27** correct implementations written differently (grid for
+  flex, margins for gap, inline SVG with `currentColor`, variables for literals, longhands, wrappers, a border
+  for an inset shadow...). The one is by design: the band's space written as a margin outside the element
+  marked `data-section` moves that element's box.
+- **External unseen corpus**: designs and builds the checker was not developed against, added before any
+  change for them. The first 18 screens come from two private projects (12 mobile screens of a React +
+  Tailwind app, one Astro + Tailwind landing page at four widths), so only their counts are published
+  ([`corpus/external/README.md`](corpus/external/README.md) has the rules). Mistakes are generated from each
+  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 143 of 230
+  (62 %)**: 48 of 52 on the screens with Figma's values exported, 95 of 178 on those without, where pixels
+  alone miss most font weights, text colours and small radii. On the untouched builds the checks marked 71
+  things; of the 27 looked at, 26 are real gaps (a gradient at another angle, a pill 2 px short, a token off)
+  and 1 is false (a text caret Figma draws as a "|"); 44 on the landing page are not reviewed yet.
+
+  Building it found six false positives, all fixed as general rules: colours written as `oklab()`, texts
+  in form fields, Figma layers hidden under opaque ones, Tailwind's placeholder shadows, 0 px border resets
+  and dividers drawn as inset shadows; a benchmark bug that paired a repeated section with the wrong one; and
+  a capture that waited for an image that never loads. It also added box matching for painted frames without
+  ids: detection went from 139 to 143 on the same mutations, false positives on the untouched builds from 6
+  to 1.
 
 The tool itself was extracted from a production mobile web app (React + Capacitor), where every section of
 every checked screen ended up matching Figma in position and height.
 
 ## Limits
 
-Web only (Chromium through Playwright), device scale factor 1, one reference viewport per sections file,
-static states (hover, focus and open menus need their own preview route). Fonts must match the design's.
-Without the exported styles, the colour of small text, small radius changes and font weight are not seen.
-Each of these is spelled out in the [method reference](skills/figma-pixel-check/references/method.md#limits).
+Web only (Chromium through Playwright), device scale factor 1, one reference viewport per sections file.
+Every state needs its own reference from Figma; motion is frozen, never compared. Fonts must match the
+design's. Without the exported styles, the colour of small text, small radius changes and font weight are
+not seen. The element marked for a band must span it. No check here catches every UI mistake: the numbers
+above say what was measured and where. Each limit is spelled out in the
+[method reference](skills/figma-pixel-check/references/method.md#limits).
 
 ---
 
@@ -170,9 +222,15 @@ Each of these is spelled out in the [method reference](skills/figma-pixel-check/
 и зазоры каждой секции, responsive-аудит открывает экран на шести телефонах от 360 до 440 px и ищет то,
 что вылезает за экран или за свой блок, текст, который не помещается, и контент под закреплённой панелью.
 
-Работает без агента: обычные скрипты на Node и Playwright с лимитами для CI (`--max-geometry=1`,
-`--max-color`, `--max-style`, `responsive-audit --fail`; принятые находки привязаны к устройствам и
-допустимому размеру). Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
+Работает без агента и независимо от того, кто сверстал экран (Claude, Codex, Cursor, человек): обычные
+скрипты на Node и Playwright с лимитами для CI (`--max-geometry=1`, `--max-color`, `--max-style`,
+`responsive-audit --fail`; принятые находки привязаны к устройствам и допустимому размеру). Состояния
+(hover, focus, открытое меню) проверяются так же, каждое со своим эталоном. Hotspots показывают, где внутри
+секции расхождение, `report.html` — эталон, сборку и diff рядом, `drift.mjs` — что стало лучше или хуже с
+прошлого запуска. Внутренний корпус (168 из 168 мутаций, 1 ложное срабатывание из 27 эквивалентных
+реализаций) и внешний «невиденный» корпус считаются раздельно: на 18 экранах двух чужих проектов
+обнаружено 143 из 230 мутаций (48 из 52 там, где выгружены значения из Figma), ложных срабатываний на
+нетронутых сборках 1 из 27 разобранных находок. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.
 

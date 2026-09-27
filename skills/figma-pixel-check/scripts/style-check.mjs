@@ -53,8 +53,6 @@ export function readFigmaStyles(dir, id, sections) {
     outer !== inner &&
     outer.type !== 'TEXT' &&
     inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
-  const parentOf = (node, index) =>
-    nodes.filter((other, i) => i < index && holds(other, node)).sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
   // Hidden in Figma itself: a layer painted later (after it in the file's order, so above it) with an opaque
   // fill covers the whole of it. The design does not show it, so the build need not have it.
   const opaque = (node) =>
@@ -81,12 +79,34 @@ export function readFigmaStyles(dir, id, sections) {
     if (part.width < 0 || part.height < 0 || (frameWidth && (node.x >= frameWidth || node.y >= frameHeight))) return true;
     return nodes.some((other, i) => i > index && opaque(other) && covers(other, part) && !covers(node, other));
   };
-  const parents = nodes.map((node, index) => parentOf(node, index));
+  // What the design shows: not under an opaque layer, not beyond the frame, not at 0 % (a layer hidden this way
+  // is no one's parent or child), and not a stacked copy of a text.
+  const hidden = nodes.map((node, index) => occluded(node, index) || (node.effectiveOpacity ?? node.opacity ?? 1) <= 0.01);
+  const parents = nodes.map((node, index) =>
+    // Of two holders of one size (a frame and its inner frame), the later one in the file is inside the other.
+    hidden[index] ? null : nodes.filter((other, i) => i < index && !hidden[i] && holds(other, node)).sort((a, b) => a.width * a.height - b.width * b.height).reduce((best, other) => (best && other.width * other.height > best.width * best.height ? best : other), null),
+  );
   // How far a child's stroke reaches past its box: half a centred stroke, all of an outside one (a zero-height
   // divider line draws half its weight on each side). Spacing measured to the children may be off by that much.
   const overhang = (node) => {
     const w = Math.max(0, ...(node.strokeWeights ?? []).map((v) => v ?? 0));
     return node.strokes?.length ? (node.strokeAlign === 'OUTSIDE' ? w : node.strokeAlign === 'CENTER' || node.type === 'LINE' ? w / 2 : 0) : 0;
+  };
+  // A node deeper inside, on the edge of the frame's content (a ring icon in wrappers a build may not draw), is
+  // where the build's nearest child may be measured.
+  const indexOf = new Map(nodes.map((node, i) => [node, i]));
+  const inside = (index, node) => {
+    for (let parent = parents[index]; parent; parent = parents[indexOf.get(parent)]) if (parent === node) return true;
+    return false;
+  };
+  const onEdge = (node, other) => {
+    const [top, right, bottom, left] = node.padding ?? [0, 0, 0, 0];
+    return (
+      Math.abs(other.x - node.x - left) <= 1 ||
+      Math.abs(other.y - node.y - top) <= 1 ||
+      Math.abs(node.x + node.width - right - other.x - other.width) <= 1 ||
+      Math.abs(node.y + node.height - bottom - other.y - other.height) <= 1
+    );
   };
   // Stacked copies of one text (the same text at the same place) draw as one; the build has one element for them.
   const duplicate = (node, index) =>
@@ -102,12 +122,17 @@ export function readFigmaStyles(dir, id, sections) {
       place: placeOf(node),
       flow: node.layoutPositioning !== 'ABSOLUTE' && Boolean(parents[index]?.layoutMode),
       // Hidden in the design: under an opaque layer, beyond the frame, or fully transparent (a layer at 0 %).
-      hiddenInFigma: occluded(node, index) || (node.effectiveOpacity ?? node.opacity ?? 1) <= 0.01,
-      childCount: parents.filter((parent) => parent === node).length,
-      childOverhang: Math.max(0, ...nodes.filter((_, i) => parents[i] === node).map(overhang)),
+      hiddenInFigma: hidden[index],
+      childCount: parents.filter((parent, i) => parent === node && !duplicate(nodes[i], i)).length,
+      childOverhang: Math.max(0, ...nodes.filter((other, i) => parents[i] === node || (other.strokes?.length && onEdge(node, other) && inside(i, node))).map(overhang)),
       // A frame whose only child is an Auto Layout frame: a build may draw both as one element, with both paddings.
+      // A wrapper of the same box without Auto Layout between them (a component's inner frame) changes nothing.
       innerPadding: (() => {
-        const kids = nodes.filter((_, i) => parents[i] === node);
+        let kids = nodes.filter((_, i) => parents[i] === node);
+        while (kids.length === 1 && !kids[0].layoutMode && ['x', 'y', 'width', 'height'].every((key) => Math.abs(kids[0][key] - node[key]) <= 1)) {
+          const [only] = kids;
+          kids = nodes.filter((_, i) => parents[i] === only);
+        }
         return kids.length === 1 && kids[0].layoutMode && kids[0].padding ? kids[0].padding : null;
       })(),
       duplicate: duplicate(node, index),
@@ -146,6 +171,7 @@ export function requestsFor(nodes, sectionNames) {
     layout: Boolean(node.layoutMode),
     // Across in the frame's pixels, down from the section's top.
     at: { x: node.x, y: node.y - node.place.section.top },
+    size: { width: node.width, height: node.height },
     box: paints(node) && !nodes.some((other) => other !== node && paints(other) && same(other, node))
       ? { x: node.x, y: node.y - node.place.section.top, width: node.width, height: node.height }
       : null,
@@ -211,7 +237,8 @@ export async function readDom(requests) {
       ['split', all.filter((element) => element.children.length > 0 && !whole.includes(element) && (squash(ownText(element)) === want || [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && squash(node.textContent) === want)))],
       ['wrapper', deepest(whole)],
       // A caret Figma draws as a "|" after a field's text is not part of the text.
-      ['field', all.filter((element) => fieldText(element) !== null && [want, want.replace(/\|$/, '')].includes(squash(fieldText(element))))],
+      // A lone caret is no field's text: an empty field is not where Figma draws it.
+      ['field', all.filter((element) => fieldText(element) !== null && [want, want.replace(/\|$/, '')].filter(Boolean).includes(squash(fieldText(element))))],
     ];
     const [how, found] = tiers.find(([, list]) => list.length) ?? [null, []];
     if (!found.length) continue;
@@ -270,10 +297,12 @@ export async function readDom(requests) {
         painted(element)
       );
     });
-    if (fits.length !== 1) return;
-    elements[i] = fits[0];
+    // A layer of the element's own box laid over it (a selection ring at inset 0) is part of the element.
+    const own = fits.filter((element) => !(fits.includes(element.parentElement) && ['absolute', 'fixed'].includes(getComputedStyle(element).position)));
+    if (own.length !== 1) return;
+    elements[i] = own[0];
     matchedBy[i] = 'box';
-    claimed.add(fits[0]);
+    claimed.add(own[0]);
   });
   // 4. A painted node that holds texts of its own, by those texts: the nearest painted element around all of
   // their elements (a button around its label, a card around its title). It does not depend on the box, so a
@@ -423,6 +452,25 @@ export async function readDom(requests) {
     const src = icon.currentSrc || icon.src;
     return /\.svg(\?|#|$)|^data:image\/svg/i.test(src) ? { svgFile: { url: src, rendered } } : null;
   };
+  // A stroke drawn over the element by a layer of its own box (an absolute child or a ::before/::after at
+  // inset 0 with a border or a ring), as builds draw a selection ring that must not move the content.
+  const overlayOf = (element) => {
+    const rect = element.getBoundingClientRect();
+    const drawsLine = (s) =>
+      s.boxShadow !== 'none' || ['Top', 'Right', 'Bottom', 'Left'].some((side) => s[`border${side}Style`] !== 'none' && parseFloat(s[`border${side}Width`]) > 0);
+    for (const which of ['before', 'after']) {
+      const s = getComputedStyle(element, `::${which}`);
+      if (s.content === 'none' || !['absolute', 'fixed'].includes(s.position) || !drawsLine(s)) continue;
+      if (Math.abs(parseFloat(s.width) - rect.width) <= 1 && Math.abs(parseFloat(s.height) - rect.height) <= 1) return read(s);
+    }
+    for (const child of element.children) {
+      const s = getComputedStyle(child);
+      if (!['absolute', 'fixed'].includes(s.position) || !drawsLine(s)) continue;
+      const r = child.getBoundingClientRect();
+      if (['left', 'top', 'width', 'height'].every((key) => Math.abs(r[key] - rect[key]) <= 1)) return read(s);
+    }
+    return null;
+  };
   const texts = new Set(elements.filter((element, i) => element && requests[i].type === 'TEXT'));
   const frames = new Set(elements.filter((element, i) => element && requests[i].type !== 'TEXT'));
   return requests.map((request, i) => {
@@ -430,6 +478,17 @@ export async function readDom(requests) {
     const sectionElement = sectionsByName.get(request.section)?.[request.occurrence];
     const sectionBox = sectionElement ? box(sectionElement.getBoundingClientRect()) : null;
     if (!element) {
+      // A text the design draws inside a picture (a card logo, a badge) is part of the picture in the build.
+      if (request.type === 'TEXT' && sectionElement && request.size) {
+        const top = sectionElement.getBoundingClientRect().top;
+        const inImage = [...sectionElement.querySelectorAll('img, svg, canvas, picture, video')].some((media) => {
+          const rect = media.getBoundingClientRect();
+          const x = rect.left + window.scrollX;
+          const y = rect.top - top;
+          return rect.width > 0 && request.at.x >= x - 1 && request.at.y >= y - 1 && request.at.x + request.size.width <= x + rect.width + 1 && request.at.y + request.size.height <= y + rect.height + 1;
+        });
+        if (inImage) return { inImage: true };
+      }
       const pseudo = request.type !== 'TEXT' ? pseudoOf(request.id) : null;
       if (!pseudo) return null;
       const style = getComputedStyle(pseudo.element, `::${pseudo.which}`);
@@ -478,6 +537,7 @@ export async function readDom(requests) {
       opacity: opacityOf(element),
       children: request.layout ? [...kids] : [],
       childSides: kids.sides ?? [],
+      overlay: request.type !== 'TEXT' ? overlayOf(element) : null,
       style: read(style),
     };
   });
@@ -590,6 +650,29 @@ const sameColor = (hex, alpha, dom) => {
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2) <= COLOR && Math.abs(alpha - dom.alpha) <= ALPHA;
 };
 const showColor = (hex, alpha = 1) => (alpha <= 0.001 ? 'transparent' : alpha < 1 ? `${hex} ${Math.round(alpha * 100)} %` : hex);
+/**
+ * The colour a background draws when its image layers are all flat (a gradient of one colour, the way a build
+ * stacks a tint over a colour: `bg-white bg-[linear-gradient(accent/10,accent/10)]`): the layers blended over
+ * background-color, as {rgb, alpha}. Anything else in the image (a real gradient, a url()) gives null.
+ */
+function flatBackground(color, image) {
+  const under = parseColor(color);
+  if (!image || image === 'none') return under;
+  const layers = image.match(/(?:repeating-)?(?:linear|radial|conic)-gradient\((?:[^()]|\([^()]*\))*\)|url\([^)]*\)/g) ?? [];
+  const flat = layers.map((layer) => {
+    const stops = (layer.match(COLOR_FN) ?? []).map(parseColor);
+    return stops.length && stops.every((stop) => stop.alpha === stops[0].alpha && stop.rgb.every((v, k) => v === stops[0].rgb[k])) ? stops[0] : null;
+  });
+  if (!flat.length || flat.includes(null)) return null;
+  // The first layer is on top.
+  return flat.reverse().reduce((below, over) => {
+    const a = over.alpha;
+    const b = below?.alpha ?? 0;
+    const alpha = a + b * (1 - a);
+    const rgb = over.rgb.map((v, k) => (v * a + (below?.rgb[k] ?? 0) * b * (1 - a)) / (alpha || 1));
+    return { rgb, alpha };
+  }, under);
+}
 const showDom = (color) => (color ? showColor(toHex(color.rgb), color.alpha) : 'none');
 const round = (value) => Math.round(value * 100) / 100;
 const px = (value) => (value === 'normal' ? 0 : parseFloat(value));
@@ -638,9 +721,17 @@ function position(node, dom, add) {
     if (!near(x, 0, TEXT_CENTRE) || !near(y, 0, TEXT_CENTRE)) add('position', `${round(node.x)}, ${round(node.y)}`, `${round(node.x + x)}, ${round(node.y + y)}`);
     return;
   }
-  const x = across(dom.box.left);
-  const y = dom.box.top - dom.sectionBox.top - (node.y - node.place.section.top);
-  if (!near(x, 0, SIZE) || !near(y, 0, SIZE)) add('position', `${round(node.x)}, ${round(node.y)}`, `${round(node.x + x)}, ${round(node.y + y)}`);
+  // A box that hugs its content on an axis may be anchored by its start, its centre or its end: its size follows
+  // text that renders a little wider or narrower, so any one of them in place will do, within what text drifts
+  // (a hugging chip after another one moves by how much narrower the first one's text is drawn).
+  const [sizingX, sizingY] = node.sizing ?? ['FIXED', 'FIXED'];
+  const width = dom.box.right - dom.box.left;
+  const height = dom.box.bottom - dom.box.top;
+  const nearest = (start, grown, hug) => (hug ? [start, start + grown / 2, start + grown].sort((a, b) => Math.abs(a) - Math.abs(b))[0] : start);
+  const x = nearest(across(dom.box.left), width - node.width, sizingX === 'HUG');
+  const y = nearest(dom.box.top - dom.sectionBox.top - (node.y - node.place.section.top), height - node.height, sizingY === 'HUG');
+  const tolerance = (hug) => (hug ? TEXT_CENTRE : SIZE);
+  if (!near(x, 0, tolerance(sizingX === 'HUG')) || !near(y, 0, tolerance(sizingY === 'HUG'))) add('position', `${round(node.x)}, ${round(node.y)}`, `${round(node.x + x)}, ${round(node.y + y)}`);
 }
 
 /** The style differences of one Figma node and its element: [{property, figma, dom}]. */
@@ -756,7 +847,7 @@ function differences(node, dom) {
   if (dom.svg) return off; // an SVG's own shapes are drawn with fill and stroke, not the box properties below
 
   if (solid) {
-    const background = parseColor(s.backgroundColor);
+    const background = flatBackground(s.backgroundColor, s.backgroundImage) ?? parseColor(s.backgroundColor);
     if (!sameColor(solid.color, solid.opacity, background)) add('background', showColor(solid.color, solid.opacity), showDom(background));
   }
   const gradient = fills.find((fill) => fill.type.startsWith('GRADIENT_'));
@@ -815,24 +906,31 @@ function differences(node, dom) {
       const w = weights[0];
       // Where each drawing sits against the box: a border inside it (outside when the box grew by it), an inset
       // ring inside, an outer ring outside, an outline by its offset, an inset and an outer ring together centred.
-      const offset = parseFloat(s.outlineOffset) || 0;
-      const grown = near(width, node.width + 2 * w, SIZE) && near(height, node.height + 2 * w, SIZE);
-      const options = [
-        border.every((b) => b.style !== 'none' && near(b.width, w, PX)) && { color: border[0].color, style: border[0].style, align: grown ? 'OUTSIDE' : 'INSIDE' },
-        s.outlineStyle !== 'none' &&
-          near(parseFloat(s.outlineWidth), w, PX) && {
-            color: parseColor(s.outlineColor),
-            style: s.outlineStyle,
-            align: near(offset, -w, PX) ? 'INSIDE' : near(offset, -w / 2, PX) ? 'CENTER' : offset > -PX ? 'OUTSIDE' : 'INSIDE',
-          },
-        ...rings.filter((ring) => near(ring.spread, w, PX)).map((ring) => ({ color: ring.color, style: 'solid', align: ring.inset ? 'INSIDE' : 'OUTSIDE' })),
-        ...rings.flatMap((a, i) =>
-          rings
-            .slice(i + 1)
-            .filter((b) => a.inset !== b.inset && near(a.spread + b.spread, w, PX))
-            .map(() => ({ color: a.color, style: 'solid', align: 'CENTER' })),
-        ),
-      ].filter(Boolean);
+      // The element's own drawing, or else a layer of its box drawn over it (dom.overlay).
+      const drawings = (st, own) => {
+        const lines = own ? border : SIDES.map((side) => ({ width: parseFloat(st[`border${side}Width`]), color: parseColor(st[`border${side}Color`]), style: st[`border${side}Style`] }));
+        const ringsOf = own ? rings : parseShadows(st.boxShadow).filter((shadow) => shadow.x === 0 && shadow.y === 0 && shadow.blur === 0 && shadow.spread > 0);
+        const offset = parseFloat(st.outlineOffset) || 0;
+        const grown = own && near(width, node.width + 2 * w, SIZE) && near(height, node.height + 2 * w, SIZE);
+        return [
+          lines.every((b) => b.style !== 'none' && near(b.width, w, PX)) && { color: lines[0].color, style: lines[0].style, align: grown ? 'OUTSIDE' : 'INSIDE' },
+          st.outlineStyle !== 'none' &&
+            near(parseFloat(st.outlineWidth), w, PX) && {
+              color: parseColor(st.outlineColor),
+              style: st.outlineStyle,
+              align: near(offset, -w, PX) ? 'INSIDE' : near(offset, -w / 2, PX) ? 'CENTER' : offset > -PX ? 'OUTSIDE' : 'INSIDE',
+            },
+          ...ringsOf.filter((ring) => near(ring.spread, w, PX)).map((ring) => ({ color: ring.color, style: 'solid', align: ring.inset ? 'INSIDE' : 'OUTSIDE' })),
+          ...ringsOf.flatMap((a, i) =>
+            ringsOf
+              .slice(i + 1)
+              .filter((b) => a.inset !== b.inset && near(a.spread + b.spread, w, PX))
+              .map(() => ({ color: a.color, style: 'solid', align: 'CENTER' })),
+          ),
+        ].filter(Boolean);
+      };
+      const ownOptions = drawings(s, true);
+      const options = ownOptions.length || !dom.overlay ? ownOptions : drawings(dom.overlay, false);
       const found =
         options.find((option) => sameColor(stroke.color, alpha, option.color) && option.align === node.strokeAlign) ??
         options.find((option) => sameColor(stroke.color, alpha, option.color)) ??
@@ -1033,6 +1131,10 @@ export function compareStyles(nodes, doms) {
     const entry = sections.get(node.place.index) ?? { checked: 0, off: [], unmatched: 0, byId: 0, byText: 0 };
     sections.set(node.place.index, entry);
     const dom = doms[i];
+    if (dom?.inImage) {
+      entry.unmatched++;
+      return;
+    }
     const icon = !dom && node.type !== 'TEXT' ? iconOf(node) : null;
     if (icon) {
       entry.checked++;

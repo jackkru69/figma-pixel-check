@@ -44,7 +44,9 @@ written once, before the first bench run.
 
 `npm run bench` writes the external group's details (screens, sections, selectors, texts) to
 `corpus/external/BENCHMARK.md`, which is not committed; the committed `corpus/BENCHMARK.md` keeps its counts
-only. `npm run external` compares every case with its recorded baseline.
+only. After labelling findings in `case.json`, `node test/bench.mjs --report` writes both reports again from
+`corpus/bench-results.json` without running anything. `npm run external` compares every case with its
+recorded baseline (it runs every case, so it takes a while).
 
 ## A case
 

@@ -192,7 +192,8 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    - the deepest element holding exactly the text, part of it directly (whitespace, soft hyphens,
      zero-width characters and case aside);
    - Figma's own split (`Hello` and `John` as two nodes, `<p>Hello <b>John</b></p>` in the build): the
-     element whose own text is the node's;
+     element whose own text, or one of whose own text nodes, is the node's; several nodes may share it
+     (`<th>Price<br>per month</th>` for two Figma texts);
    - the build's split (`<span>Hello</span> <span>John</span>` for one node): the element wrapping the pieces.
 
    Never a part of a text: `Alex` is not found in `Alex Kim`. The text of an element is what it renders: a part
@@ -215,24 +216,33 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    Spacing is measured from the element's box to its children's boxes, so a few things are allowed for: a gap
    exists only between two children or more (the itemSpacing of a frame with one child draws nothing); a
    child's centred or outside stroke (a ring drawn into an icon's image, a zero-height divider line) reaches
-   past its Figma box, and that much is tolerated; and a frame whose only child is an Auto Layout frame may be
-   one element in the build, with both paddings added.
+   past its Figma box, and that much is tolerated, also for a node deeper inside on the edge of the content
+   (a loader ring inside wrappers the build does not draw); a frame whose only child is an Auto Layout frame may be
+   one element in the build, with both paddings added (also through a plain wrapper frame of the same box
+   between them); and a wrapper of the element's own size around its
+   children (a `div` around a list) that is no Figma node of its own is looked through.
 
    A text's line height is the one it draws: an inline element inside a block with a taller line takes the
    block's. A text outside Auto Layout is placed by its glyphs, not by its element: across by the edge its
    alignment keeps (the centre when the box hugs the text), down by the centre when the text sets the box's
-   height, within 2 px. A drop shadow may also be `filter: drop-shadow()`, whose blur is σ, half of
+   height, within 2 px. A frame outside Auto Layout that hugs its content may be anchored by its start, centre
+   or end on that axis, within the same 2 px (its size follows text that renders a little wider or narrower).
+   Parents are found by their boxes among the nodes the design shows; of two holders of one size, the later
+   one in the file is the inner one. A drop shadow may also be `filter: drop-shadow()`, whose blur is σ, half of
    box-shadow's.
 
    What the design does not show is not looked for: a layer under an opaque layer painted later (a row behind
    a banner, a leftover label under a card), one beyond the frame's edges or covered where it is not, one at 0 %
-   opacity, and the extra copies of a text stacked on itself. A lone `|` text is a caret or a divider glyph: it
-   is not required, and a field's text matches Figma's even when Figma draws the caret after it (`100|`).
+   opacity, and the extra copies of a text stacked on itself. A text whose Figma box lies inside a picture of
+   the build (an `<img>`, `<svg>`, `<canvas>`: a card logo, a badge) is part of that picture and is counted as
+   unmatched, not missing. A lone `|` text is a caret or a divider glyph: it
+   is not required, never matched to an empty field, and a field's text matches Figma's even when Figma
+   draws the caret after it (`100|`).
 
    Colours are read in any notation the build uses (`oklab()` from Tailwind's opacity modifiers, `oklch()`,
    `color()`, `color-mix()`): the browser converts them. Figma's fills stack bottom to top: what lies under the
    topmost opaque fill is not compared, and solid fills above it are blended into the one colour the build
-   may draw. A colour `filter` (brightness, contrast, invert…) is reported, since Figma has none, except on
+   may draw, as a colour or as flat layers over one (`#fff linear-gradient(accent/10, accent/10)`). A colour `filter` (brightness, contrast, invert…) is reported, since Figma has none, except on
    images and SVG, where recolouring an icon that way is common. Shadows that draw nothing (transparent, or without
    offset, blur and spread, as Tailwind lists on every element) do not count as a shadow; a border of 0 px
    counts as no border; a one-sided stroke may be an inset shadow moved by its weight (`inset 0 -1px 0 0`); a
@@ -251,7 +261,7 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 | text       | font family, size, weight, line height (AUTO: the height of a one-line Figma text box), letter spacing, the case as displayed (Figma's text case against `text-transform`), colour × every layer's opacity |
 | any other  | size on the axes Figma fixes (a hugging or filling size follows its text); opacity with its ancestors'; a solid fill against `background-color`; a gradient's first and last stops; corner radii as drawn (at most half the shorter side; an ellipse is round; a smoothed corner may be a `clip-path`) |
 | any placed by hand | its position (outside Auto Layout: a floating button, a caption on a photo, a dot in a mask): down from its section's top, across from the frame's edge, within 1 px; texts too |
-| strokes    | colour, weight and alignment: a `border` (inside, or outside when the box grew by it), an `outline` (by its offset), or a `box-shadow` ring (inset inside, outer outside, both halves centred); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells) |
+| strokes    | colour, weight and alignment: a `border` (inside, or outside when the box grew by it), an `outline` (by its offset), or a `box-shadow` ring (inset inside, outer outside, both halves centred); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells). The stroke may also be drawn by a layer of the element's own box laid over it (an absolute child or a `::before`/`::after` at inset 0 with a border or ring, as a selection ring); that layer is part of the element, not a candidate of its own when the element is found by its box |
 | effects    | drop and inner shadows against `box-shadow`, and a shadow the design does not have; layer and background blur against `filter` / `backdrop-filter: blur(R/2)`; corner smoothing needs a `clip-path` |
 | icons      | vectors inside an icon: an SVG file shown with `<img>`, an inline `<svg>`, or the only one of either in a textless wrapper. Their stroke colour and weight and their fill against the drawn shapes of the SVG as the browser computes them, so attributes, inline styles, `<style>` rules and classes, inheritance from `<g>`, `currentColor` (black in an `<img>`, the element's colour inline) and the viewBox scale all resolve. An SVG file is computed in a blank page of the same browser, so the page's CSP cannot block its `<style>`. Not resolved: shapes behind `<use>`, and a transform that scales a stroke |
 | every node | found but not shown (`display: none`, `visibility: hidden`) is reported as hidden |

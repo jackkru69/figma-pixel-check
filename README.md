@@ -182,21 +182,23 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
   for an inset shadow...). The one is by design: the band's space written as a margin outside the element
   marked `data-section` moves that element's box.
 - **External unseen corpus**: designs and builds the checker was not developed against, added before any
-  change for them. The first 18 screens come from two private projects (12 mobile screens of a React +
-  Tailwind app, one Astro + Tailwind landing page at four widths), so only their counts are published
+  change for them. 77 screens from two private projects (68 mobile screens of two React builds, Tailwind and
+  CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), all with Figma's own
+  values exported, so only their counts are published
   ([`corpus/external/README.md`](corpus/external/README.md) has the rules). Mistakes are generated from each
-  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 143 of 230
-  (62 %)**: 48 of 52 on the screens with Figma's values exported, 95 of 178 on those without, where pixels
-  alone miss most font weights, text colours and small radii. On the untouched builds the checks marked 71
-  things; of the 27 looked at, 26 are real gaps (a gradient at another angle, a pill 2 px short, a token off)
-  and 1 is false (a text caret Figma draws as a "|"); 44 on the landing page are not reviewed yet.
+  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 706 of
+  742 (95 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
+  mark **171 findings, all looked at: 171 real gaps, 0 false** (another font family than the design's,
+  a colour one token off, a radius without Figma's corner smoothing, a pill 2 px short).
 
-  Building it found six false positives, all fixed as general rules: colours written as `oklab()`, texts
-  in form fields, Figma layers hidden under opaque ones, Tailwind's placeholder shadows, 0 px border resets
-  and dividers drawn as inset shadows; a benchmark bug that paired a repeated section with the wrong one; and
-  a capture that waited for an image that never loads. It also added box matching for painted frames without
-  ids: detection went from 139 to 143 on the same mutations, false positives on the untouched builds from 6
-  to 1.
+  When the cases were added, the untouched builds had 199 findings; two reviewers per case (one to label, one
+  trying to refute the label) found 160 real and 33 false, with no disagreement. Every false one came from a
+  way of writing the same design the checker did not know, and each became a general rule, never a case
+  exception: `filter: drop-shadow()`, a tint as a flat gradient over a colour, a stroke drawn by an overlay
+  layer, several Figma texts in one element, text drawn inside a picture, wrappers of the same size, hidden
+  copies in the Figma file, carets, stroke overhang, half pixels, inline line heights, text that renders a
+  little narrower. The first 18 screens had already fixed colours in `oklab()`, form fields, layers hidden
+  under opaque ones, Tailwind's placeholder shadows, 0 px border resets and dividers drawn as inset shadows.
 
 The tool itself was extracted from a production mobile web app (React + Capacitor), where every section of
 every checked screen ended up matching Figma in position and height.
@@ -228,9 +230,9 @@ above say what was measured and where. Each limit is spelled out in the
 (hover, focus, открытое меню) проверяются так же, каждое со своим эталоном. Hotspots показывают, где внутри
 секции расхождение, `report.html` — эталон, сборку и diff рядом, `drift.mjs` — что стало лучше или хуже с
 прошлого запуска. Внутренний корпус (168 из 168 мутаций, 1 ложное срабатывание из 27 эквивалентных
-реализаций) и внешний «невиденный» корпус считаются раздельно: на 18 экранах двух чужих проектов
-обнаружено 143 из 230 мутаций (48 из 52 там, где выгружены значения из Figma), ложных срабатываний на
-нетронутых сборках 1 из 27 разобранных находок. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
+реализаций) и внешний «невиденный» корпус считаются раздельно: на 77 экранах двух проектов, под которые
+проверка не писалась, обнаружено 706 из 742 мутаций (95 %), а на нетронутых сборках все 171 находка
+разобраны по картинкам: 171 реальное расхождение, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.
 

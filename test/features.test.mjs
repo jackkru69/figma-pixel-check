@@ -348,6 +348,101 @@ describe('values found without ids, in the notations builds use', () => {
       assert.equal(section(results()[0], 'nav').dHeight, 1);
     });
   });
+  test('two texts of the design in one element are both found there', () => {
+    styles([frame('9:7', 'hero', 56, 180), handle({ characters: '@alex', width: 40 }), handle({ id: '9:9', name: 'kim', characters: 'kim', x: 190, width: 35 })]);
+    withSite({ html: (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<p class="hero__handle">@alex<wbr />kim</p>') }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(styled('hero').missingText, 0);
+      assert.deepEqual(offs('hero'), []);
+    });
+  });
+
+  test('a text the design draws inside a picture is not missing from the build', () => {
+    const initials = { id: '9:10', name: 'AK', type: 'TEXT', x: 173, y: 96, width: 28, height: 24, characters: 'AK', fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }] };
+    styles([frame('9:7', 'hero', 56, 180), initials]);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><circle cx="36" cy="36" r="36" fill="#5b5bd6"/></svg>';
+    withSite({ html: (h) => h.replace('<div class="avatar" aria-hidden="true">AK</div>', '<img class="avatar" src="avatar.svg" alt="" />'), files: { 'avatar.svg': svg } }, () => {
+      run('pixel-diff.mjs');
+      // Unmatched: the hero frame (no id, nothing painted) and the initials.
+      assert.equal(styled('hero').missingText, 0);
+      assert.equal(styled('hero').unmatched, 2);
+    });
+    withSite({ html: (h) => h.replace('<div class="avatar" aria-hidden="true">AK</div>', '<div class="avatar" aria-hidden="true"></div>') }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(styled('hero').missingText, 1);
+    });
+  });
+
+  test('padding is measured through a wrapper of the same size', () => {
+    const hero = { ...frame('9:7', 'hero', 56, 172), padding: [16, 20, 24, 20] };
+    const paddings = () => offs('hero').filter((line) => / padding| centring/.test(line));
+    styles([hero]);
+    const id = (h) => h.replace('<section class="hero" data-section="hero">', '<section class="hero" data-section="hero" data-node-id="9:7">');
+    withSite({ html: id }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(paddings(), []);
+    });
+    const wrap = (h) => id(h).replace('data-node-id="9:7">', 'data-node-id="9:7"><div class="hero__in">').replace('<p class="hero__handle">@alexkim</p>\n      </section>', '<p class="hero__handle">@alexkim</p></div></section>');
+    const css = '.hero { display: block; padding: 0; } .hero__in { display: flex; flex-direction: column; align-items: center; padding: 16px 20px 24px; }';
+    withSite({ html: wrap, css }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(paddings(), []);
+    });
+    withSite({ html: wrap, css: `${css} .hero__in { padding-left: 40px; }` }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(paddings().length, 1, offs('hero').join('\n'));
+    });
+  });
+
+  test('a tint drawn as a flat gradient over a colour is the colour Figma blends', () => {
+    // Figma: white under 10 % red. The build: white with a one-colour gradient layer of 10 % red over it.
+    styles([{ ...button, fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }, { type: 'SOLID', color: '#C9302C', opacity: 0.1 }] }]);
+    withSite({ css: '.action button { background: #fff linear-gradient(rgba(201, 48, 44, 0.1), rgba(201, 48, 44, 0.1)); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+    withSite({ css: '.action button { background: #fff linear-gradient(rgba(201, 48, 44, 0.3), rgba(201, 48, 44, 0.3)); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(offs('action').filter((line) => line.includes('background')).length, 1);
+    });
+  });
+
+  test('a stroke drawn by a layer over the box counts as the box stroke', () => {
+    styles([{ ...button, strokes: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }], strokeAlign: 'INSIDE', strokeWeights: [1, 1, 1, 1] }]);
+    const html = (h) => h.replace('<button type="button">Sign out</button>', '<button type="button">Sign out<span class="ring"></span></button>');
+    const css = '.action button { position: relative; } .ring { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px #c9302c; }';
+    withSite({ html, css }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+    withSite({ html, css: `${css} .ring { box-shadow: none; }` }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), ['button 9:5 stroke 1 px #C9302C → none']);
+    });
+  });
+
+  test('a lone caret is not matched to an empty field', () => {
+    const caret = { id: '9:12', name: '|', type: 'TEXT', x: 30, y: 530, width: 4, height: 20, characters: '|', fills: [{ type: 'SOLID', color: '#5B5BD6', opacity: 1 }] };
+    styles([caret]);
+    withSite({ html: (h) => h.replace('<button type="button">Sign out</button>', '<button type="button">Sign out</button><input class="code" />'), css: '.code { position: absolute; left: 20px; width: 40px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+      assert.equal(styled('action').missingText, 0);
+    });
+  });
+
+  test('a frame inside a wrapper of its own size belongs to the wrapper, and their paddings add up', () => {
+    // Figma: hero (no padding) > a plain wrapper of the same box > an Auto Layout frame with the padding.
+    const hero = { ...frame('9:7', 'hero', 56, 172), padding: [0, 0, 0, 0], primaryAxisAlignItems: 'MIN' };
+    const wrapper = { id: '9:13', name: 'wrapper', type: 'FRAME', x: 0, y: 56, width: 375, height: 172 };
+    const inner = { ...frame('9:14', 'content', 56, 172), padding: [16, 20, 24, 20] };
+    styles([hero, wrapper, inner]);
+    withSite({ html: (h) => h.replace('<section class="hero" data-section="hero">', '<section class="hero" data-section="hero" data-node-id="9:7">') }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.startsWith('hero 9:7')), []);
+    });
+  });
+
   test("a bare label in a button is placed by its glyphs, not by the button's box", () => {
     // Figma's hugging label centred in the 335×48 button (not in Auto Layout, so its position is checked).
     const label = { id: '9:6', name: 'Sign out', type: 'TEXT', x: 157.5, y: 530, width: 60, height: 20, characters: 'Sign out', textAutoResize: 'WIDTH_AND_HEIGHT', fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] };

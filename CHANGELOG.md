@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 — 2026-09-26
+## 0.6.0 — 2026-09-27
 
 - Hotspots: boxes where a section's mismatch is, in section and frame pixels, outlined on
   `-hotspots.png`; text rasterisation spread over every line makes none. Diagnostic only.
@@ -30,6 +30,13 @@
   the report; `figma-styles.js` replaces U+2028 (it cut the MCP message), exports text alignment, decoration,
   truncation, masks and clipping, and leaves defaults out; the benchmark counts a changed value of a known
   difference and leaves out mutations that change fewer than 16 pixels.
+- From the review of every finding on the untouched external builds: drop shadows written as
+  `filter: drop-shadow()`, stroke overhang and one-child gaps allowed for, carets, half-pixel geometry,
+  inline line heights, several Figma texts in one element, texts drawn inside a picture, and same-size
+  wrappers looked through when measuring padding and gap. Then, from the findings those rules left: tints
+  drawn as flat gradient layers, strokes drawn by an overlay layer of the same box, a lone caret matched to an
+  empty field, stroke overhang of deeper nodes, hugging frames anchored by any edge, and parents found among
+  the nodes the design shows (a hidden copy or a same-size wrapper made a frame look like it had two children).
 
 ## 0.5.0 — 2026-09-26
 

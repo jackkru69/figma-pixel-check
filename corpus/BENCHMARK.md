@@ -75,27 +75,27 @@ None.
 
 ## External unseen corpus (added before any checker change for it: the generalisation measure)
 
-77 screens. Detection: 681 of 741 valid mutations. False positives: 0 of 0 valid equivalents.
+77 screens. Detection: 706 of 742 valid mutations. False positives: 0 of 0 valid equivalents.
 
-Marked on the unmodified builds: 199 checks over 390 sections: **26 real gaps**, **1 false positives** (both looked at in the images and listed in case.json), 172 not reviewed yet.
+Marked on the unmodified builds: 171 checks over 390 sections: **171 real gaps**, **0 false positives** (both looked at in the images and listed in case.json), 0 not reviewed yet.
 
 ### Detection
 
 | Kind | Valid | Detected | by geometry | by spacing | by pixels | by colour | by values | Weak | Misattributed | Missed | Also elsewhere |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| fill-color | 60 | 47 | 0 | 6 | 0 | 47 | 0 | 1 | 0 | 12 | 0 |
-| font-size | 64 | 61 | 19 | 38 | 40 | 4 | 58 | 0 | 0 | 3 | 5 |
+| fill-color | 60 | 60 | 0 | 6 | 0 | 47 | 60 | 0 | 0 | 0 | 0 |
+| font-size | 64 | 62 | 19 | 38 | 40 | 4 | 62 | 0 | 0 | 2 | 5 |
 | font-weight | 125 | 121 | 7 | 9 | 27 | 2 | 118 | 4 | 0 | 0 | 2 |
-| gap | 71 | 68 | 52 | 46 | 54 | 11 | 1 | 1 | 0 | 2 | 17 |
+| gap | 72 | 68 | 52 | 46 | 54 | 11 | 23 | 1 | 0 | 3 | 17 |
 | letter-spacing | 69 | 66 | 2 | 10 | 30 | 1 | 60 | 0 | 0 | 3 | 1 |
-| margin | 74 | 74 | 3 | 51 | 64 | 20 | 22 | 0 | 0 | 0 | 0 |
-| missing | 60 | 58 | 39 | 49 | 24 | 14 | 55 | 1 | 0 | 1 | 10 |
-| padding | 67 | 58 | 51 | 4 | 36 | 9 | 1 | 1 | 0 | 8 | 24 |
-| radius | 75 | 60 | 0 | 0 | 0 | 0 | 60 | 0 | 0 | 15 | 0 |
-| text-color | 76 | 68 | 0 | 0 | 0 | 7 | 68 | 0 | 0 | 8 | 0 |
-| **all** | 741 | 681 | 173 | 213 | 275 | 115 | 443 | 8 | 0 | 52 | 59 |
+| margin | 74 | 74 | 3 | 51 | 64 | 20 | 32 | 0 | 0 | 0 | 0 |
+| missing | 62 | 58 | 39 | 49 | 24 | 14 | 55 | 1 | 0 | 3 | 10 |
+| padding | 67 | 63 | 51 | 4 | 36 | 9 | 55 | 0 | 0 | 4 | 16 |
+| radius | 74 | 61 | 0 | 0 | 0 | 0 | 61 | 0 | 0 | 13 | 0 |
+| text-color | 75 | 73 | 0 | 0 | 0 | 7 | 73 | 0 | 0 | 2 | 0 |
+| **all** | 742 | 706 | 173 | 213 | 275 | 115 | 599 | 6 | 0 | 30 | 51 |
 
-Invalid (the capture did not change): 35.
+Invalid (the capture did not change): 34.
 
 Counts only: the cases are local (rule 6 of [external/README.md](external/README.md)); the details are in `corpus/external/BENCHMARK.md` on the machine that has them.
 

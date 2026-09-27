@@ -4,6 +4,8 @@
 //
 //   node test/bench.mjs                       every corpus/<group>/<screen>/ with a mutations.json or equivalents.json
 //   node test/bench.mjs corpus/torture/list   only these screens
+//   node test/bench.mjs --report              no runs: the reports again from bench-results.json, with the
+//                                             labels of case.json as they are now (after labelling findings)
 //
 // Detection (mutations.json): every mutation is a realistic mistake, injected through captureCss (and
 // "html": [[find, replace]] on the page), then pixel-diff and the spacing audit run again and the result is
@@ -49,8 +51,10 @@ const run = (cwd, script, args = []) =>
     child.on('close', (code) => done({ code, out }));
   });
 
-const screens = (process.argv.slice(2).length
-  ? process.argv.slice(2).map((dir) => resolve(dir))
+const REPORT_ONLY = process.argv.includes('--report');
+const paths = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+const screens = REPORT_ONLY ? [] : (paths.length
+  ? paths.map((dir) => resolve(dir))
   : readdirSync(CORPUS, { withFileTypes: true })
       .filter((group) => group.isDirectory() && group.name !== 'fonts')
       .flatMap((group) => readdirSync(join(CORPUS, group.name)).map((name) => join(CORPUS, group.name, name)))
@@ -238,14 +242,19 @@ async function benchScreen(dir) {
       .filter(([, check]) => check.status === 'warn' || check.status === 'fail')
       .map(([check]) => `${section.name}: ${check}`),
   );
+  const baseFindings = labelled(dir, { sections: base.result.sections.length, marked });
+  return { screen: relative(CORPUS, dir), group: groupOf(dir), outcomes, falsePositives, baseFindings };
+}
+
+/** What case.json says of each finding marked on the unmodified build. */
+function labelled(dir, { sections, marked }) {
   const labels = existsSync(join(dir, 'case.json')) ? JSON.parse(readFileSync(join(dir, 'case.json'), 'utf8')) : {};
-  const baseFindings = {
-    sections: base.result.sections.length,
+  return {
+    sections,
     marked,
     knownReal: marked.filter((m) => (labels.knownReal ?? []).includes(m)),
     knownFalse: marked.filter((m) => (labels.knownFalse ?? []).includes(m)),
   };
-  return { screen: relative(CORPUS, dir), group: groupOf(dir), outcomes, falsePositives, baseFindings };
 }
 
 const results = [];
@@ -272,7 +281,9 @@ const where = (o) =>
 const change = (o) => [o.css?.replace(/\s+/g, ' ').trim(), ...(o.html ?? []).map(([, to]) => `html → ${to.replace(/\s+/g, ' ').slice(0, 80)}`)].filter(Boolean).join(' + ');
 
 // A previous report keeps the groups this run did not cover.
-const previous = existsSync(join(CORPUS, 'bench-results.json')) ? JSON.parse(readFileSync(join(CORPUS, 'bench-results.json'), 'utf8')) : [];
+const previous = (existsSync(join(CORPUS, 'bench-results.json')) ? JSON.parse(readFileSync(join(CORPUS, 'bench-results.json'), 'utf8')) : []).map((r) =>
+  REPORT_ONLY && r.baseFindings ? { ...r, baseFindings: labelled(join(CORPUS, r.screen), r.baseFindings) } : r,
+);
 const ran = new Set(results.map((r) => r.screen));
 const merged = [...previous.filter((r) => !ran.has(r.screen) && existsSync(join(CORPUS, r.screen))), ...results].sort((a, b) =>
   a.screen.localeCompare(b.screen),

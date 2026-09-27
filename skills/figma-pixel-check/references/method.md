@@ -222,6 +222,19 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    between them); and a wrapper of the element's own size around its
    children (a `div` around a list) that is no Figma node of its own is looked through.
 
+   A font is checked as drawn: the first family of the list the browser can draw, so a declared family that
+   is not loaded is reported with the fallback (`Jost (not loaded: system-ui)`); fontsource's `<Family>
+   Variable` counts as the family. One-line hugging texts of the same font, size and weight are also measured
+   against Figma's widths: a screen median 0.4 % or more away from Figma's is reported (diagnostic only) as
+   font files other than the ones Figma draws with, which moves line breaks and centred lines.
+
+   A see-through fill is compared as it shows over the colour behind the element (10 % of a tint over white
+   may be written as the opaque colour it makes). A vector's corners are in its path: its corner radius is
+   not compared, and a shape under a text is never the box a build draws around it. Content the page does
+   not draw (the answer of a closed `<details>`) is not a child, and elements that draw nothing (a JSON-LD
+   `<script>`) do not stop the look through a wrapper; a wrapper that spans the element across or down is
+   looked through as well, with both insets added.
+
    A text's line height is the one it draws: an inline element inside a block with a taller line takes the
    block's. A text outside Auto Layout is placed by its glyphs, not by its element: across by the edge its
    alignment keeps (the centre when the box hugs the text), down by the centre when the text sets the box's
@@ -497,7 +510,7 @@ Measured on the torture corpus (`corpus/` in the tool's repository): what matche
 | Corner smoothing                        | none in CSS: a clip-path or SVG mask, or keep it on purpose (the check does not see it)       |
 | Line height AUTO                        | the pixel value Figma shows, never `line-height: normal` (Inter 17 px: 21 in Figma, 20 in Chromium) |
 | A long word broken mid-word             | `overflow-wrap: anywhere` (the break point can still differ by a letter)                     |
-| Inter                                   | the variable font with `font-variation-settings: 'opsz' 14`; the `font` shorthand resets it, so repeat it after one |
+| Inter                                   | the version the file draws: recent files Inter 4 (the variable font with `font-variation-settings: 'opsz' 14`; the `font` shorthand resets it, so repeat it after one), older text Inter 3.19 (`@fontsource/inter` 4). The report's text width line says when the files differ |
 
 `get_design_context` writes `border` for every stroke alignment, and `overflow-clip` on every auto-layout
 frame: read the alignment from the reference (the spacing audit's Left column shows where the ring is) and

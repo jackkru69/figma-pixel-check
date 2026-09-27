@@ -6,6 +6,11 @@
   synthetic case, regression test first, general fix only, benchmarks, then ask) with the full rules in
   `references/upstream.md`; nothing is published upstream without the user's explicit approval.
   `CONTRIBUTING.md` and issue and pull request templates ask for the same.
+- From fixing the two external projects against the checker: a font is checked as drawn (a declared family
+  that is not loaded is reported), a screen-wide text width summary points at font files other than Figma's
+  (it found Inter 4 where the files draw Inter 3.19), see-through fills compared over their backdrop, strokes
+  of a same-box overlay, vectors neither compared by radius nor taken as text boxes, closed `<details>`
+  content and `<script>` siblings ignored when measuring spacing, wrappers spanning one axis looked through.
 
 ## 0.6.0 — 2026-09-27
 

@@ -443,6 +443,84 @@ describe('values found without ids, in the notations builds use', () => {
     });
   });
 
+  test('a font is checked as drawn: a variable font by its family, a declared font that is not loaded is reported', () => {
+    styles([frame('9:7', 'hero', 56, 180), handle({ fontFamily: 'Inter' })]);
+    const face = '@font-face { font-family: "Inter Variable"; src: url(inter.woff2) format("woff2"); font-weight: 100 900; }';
+    withSite({ css: `${face} .hero__handle { font-family: "Inter Variable", sans-serif; }`, files: { 'inter.woff2': readFileSync('corpus/fonts/Inter-var.woff2') } }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.includes('font-family')), []);
+    });
+    styles([frame('9:7', 'hero', 56, 180), handle({ fontFamily: 'Nowhere Sans' })]);
+    withSite({ css: '.hero__handle { font-family: "Nowhere Sans", monospace; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.includes('font-family')), ['«@alexkim» font-family Nowhere Sans → Nowhere Sans (not loaded: monospace)']);
+    });
+  });
+
+  test('a see-through fill is compared as it shows over what lies behind the element', () => {
+    // Figma: 10 % red; the build writes the colour it makes over white.
+    styles([{ ...button, fills: [{ type: 'SOLID', color: '#C9302C', opacity: 0.1 }] }]);
+    withSite({ css: '.action { background: #fff; } .action button { background: #faeaea; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+    withSite({ css: '.action { background: #000; } .action button { background: #faeaea; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(offs('action').filter((line) => line.includes('background')).length, 1);
+    });
+  });
+
+  test('what a closed <details> does not draw is not a child', () => {
+    // A question frame hugging its one line; the answer of the closed <details> is laid out below it, unseen.
+    // The answer is also a Figma text (drawn open elsewhere). Chromium lays a closed answer out only once
+    // something measures it (a page script did on the build this came from; this fixture runs none), so the
+    // test guards the rule rather than reproducing the old measurement.
+    const item = { id: '9:17', name: 'question', type: 'FRAME', x: 20, y: 184, width: 335, height: 20, sizing: ['HUG', 'HUG'], layoutMode: 'VERTICAL', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'MIN', itemSpacing: 0, padding: [0, 0, 0, 0] };
+    const answer = { id: '9:18', name: 'answer', type: 'TEXT', x: 20, y: 400, width: 80, height: 20, characters: 'An answer', fills: [{ type: 'SOLID', color: '#6B7080', opacity: 1 }] };
+    styles([item, answer]);
+    const html = (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<details class="hero__handle" data-node-id="9:17"><summary>@alexkim</summary><p>An answer</p></details>');
+    const css = '.hero__handle { align-self: stretch; } .hero__handle summary { list-style: none; } .hero__handle p { margin: 0; }';
+    withSite({ html, css }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.includes('padding')), []);
+    });
+  });
+
+  test("a vector's corners are its path: no radius is compared, and it holds no text", () => {
+    // A badge drawn by a vector over the avatar, with the initials above it.
+    const badge = { id: '9:15', name: 'badge', type: 'VECTOR', x: 171.5, y: 90, width: 32, height: 37, radius: 0, fills: [{ type: 'SOLID', color: '#5B5BD6', opacity: 1 }] };
+    const initials = { id: '9:16', name: 'AK', type: 'TEXT', x: 175, y: 96, width: 26, height: 24, characters: 'AK', fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }] };
+    styles([badge, initials]);
+    run('pixel-diff.mjs');
+    // Not found through its text: the avatar around «AK» is not the vector.
+    assert.deepEqual(offs('hero').filter((line) => line.startsWith('badge')), []);
+    // Found by its id, the element's rounding is not compared with the vector's corner radius.
+    withSite({ html: (h) => h.replace('<div class="avatar" aria-hidden="true">AK</div>', '<div class="avatar" aria-hidden="true" data-node-id="9:15">AK</div>'), css: '.avatar { width: 32px; height: 37px; margin-top: 18px; margin-bottom: 29px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.includes('radius')), []);
+    });
+  });
+
+  test('padding is measured through a container that spans the element across, whatever else draws nothing', () => {
+    const hero = { ...frame('9:7', 'hero', 56, 172), padding: [16, 20, 24, 20], counterAxisAlignItems: 'MIN' };
+    const paddings = () => offs('hero').filter((line) => / padding| centring/.test(line));
+    styles([hero]);
+    // The section holds the vertical padding, a full-width container the side one, and a JSON-LD script sits next to it.
+    const html = (h) =>
+      h
+        .replace('<section class="hero" data-section="hero">', '<section class="hero" data-section="hero" data-node-id="9:7"><div class="hero__in">')
+        .replace('<p class="hero__handle">@alexkim</p>\n      </section>', '<p class="hero__handle">@alexkim</p></div><script type="application/ld+json">{}</script></section>');
+    const css = '.hero { display: block; padding: 16px 0 24px; } .hero__in { display: flex; flex-direction: column; align-items: flex-start; padding: 0 20px; }';
+    withSite({ html, css }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(paddings(), []);
+    });
+    withSite({ html, css: `${css} .hero__in { padding-left: 32px; }` }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(paddings().length, 1, offs('hero').join('\n'));
+    });
+  });
+
   test("a bare label in a button is placed by its glyphs, not by the button's box", () => {
     // Figma's hugging label centred in the 335×48 button (not in Auto Layout, so its position is checked).
     const label = { id: '9:6', name: 'Sign out', type: 'TEXT', x: 157.5, y: 530, width: 60, height: 20, characters: 'Sign out', textAutoResize: 'WIDTH_AND_HEIGHT', fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] };
@@ -550,5 +628,31 @@ describe('reports', () => {
     assert.equal(hero.checks.geometry, 'fail');
     assert.ok(existsSync(join(dir, 'design/diff', hero.files.diff)));
     assert.ok(Array.isArray(hero.spacingFlags));
+  });
+});
+
+describe('text width', () => {
+  test('one-line texts drawn narrower than in Figma are summed up over the screen', async () => {
+    const { compareStyles } = await import('../skills/figma-pixel-check/scripts/style-check.mjs');
+    // Eight hugging one-line texts; the build draws each 3 % narrower, with the same font, size and weight.
+    const nodes = Array.from({ length: 8 }, (_, i) => ({
+      id: `9:${i}`, name: `t${i}`, type: 'TEXT', characters: `Label ${i}`, x: 20, y: 20 + i * 30, width: 100, height: 20,
+      textAutoResize: 'WIDTH_AND_HEIGHT', fontFamily: 'Inter', fontSize: 15, fontWeight: 400, lineHeight: { unit: 'PIXELS', value: 20 },
+      fills: [{ type: 'SOLID', color: '#000000', opacity: 1 }], place: { index: 0 }, flow: true,
+    }));
+    const style = {
+      fontFamily: 'Inter', fontSize: '15px', fontWeight: '400', lineHeight: '20px', letterSpacing: 'normal', textTransform: 'none',
+      color: 'rgb(0, 0, 0)', backgroundColor: 'rgba(0, 0, 0, 0)', backgroundImage: 'none', boxShadow: 'none', filter: 'none', opacity: '1',
+    };
+    const doms = nodes.map((node) => ({
+      matchedBy: 'text', text: node.characters, opacity: 1, drawnFamily: 'Inter', children: [], childSides: [], style,
+      box: { left: 20, right: 117, top: node.y, bottom: node.y + 20 }, textBox: { left: 20, right: 117, top: node.y, bottom: node.y + 20 },
+    }));
+    const { textWidth } = compareStyles(nodes, doms);
+    assert.equal(textWidth.count, 8);
+    assert.ok(Math.abs(textWidth.median - 0.97) < 1e-9, String(textWidth.median));
+    // A text whose size differs says nothing about the font files.
+    doms[0] = { ...doms[0], style: { ...style, fontSize: '14px' } };
+    assert.equal(compareStyles(nodes, doms).textWidth.count, 7);
   });
 });

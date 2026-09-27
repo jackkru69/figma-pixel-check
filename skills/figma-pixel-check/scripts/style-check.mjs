@@ -154,11 +154,14 @@ export function requestsFor(nodes, sectionNames) {
     inner.x >= outer.x - 0.5 && inner.y >= outer.y - 0.5 && inner.x + inner.width <= outer.x + outer.width + 0.5 && inner.y + inner.height <= outer.y + outer.height + 0.5;
   // The texts a painted node holds itself: those whose innermost painted node it is (a button's label, a card's
   // title), not those of a smaller painted node inside it (the card's button).
+  // A shape (a vector, a star, a line) is drawn under a text, never around it: only a frame or a rectangle can
+  // be the box a build draws around its text.
+  const SHAPES = ['VECTOR', 'BOOLEAN_OPERATION', 'STAR', 'POLYGON', 'LINE', 'ELLIPSE'];
   const painter = new Map();
   nodes.forEach((text, i) => {
     if (text.type !== 'TEXT') return;
     const holder = nodes
-      .filter((node, j) => j < i && paints(node) && inside(node, text))
+      .filter((node, j) => j < i && paints(node) && !SHAPES.includes(node.type) && inside(node, text))
       .sort((a, b) => a.width * a.height - b.width * b.height)[0];
     if (holder) painter.set(holder, [...(painter.get(holder) ?? []), text.id]);
   });
@@ -345,15 +348,19 @@ export async function readDom(requests) {
           : text;
   const SKIP = ['none', 'contents', 'table-column', 'table-column-group'];
   const children = (outer, outerStyle) => {
-    // A wrapper of the same size around the children (a div around a list) is not a level of its own: its one
-    // element child that is no Figma node of its own holds them.
+    // A wrapper around the children that spans the element across or down (a div around a list, a centred
+    // container that holds the side padding) is not a level of its own: its one element child that is no Figma
+    // node of its own holds them, and the insets of both add up, as a Figma frame's padding does.
     let element = outer;
     let style = outerStyle;
-    while (element.children.length === 1 && !ownText(element).trim()) {
-      const [only] = element.children;
+    // Elements that draw nothing (a <script> of JSON-LD, a display: none one) are not children here.
+    const drawnChildren = (node) => [...node.children].filter((child) => !['SCRIPT', 'STYLE', 'TEMPLATE', 'NOSCRIPT'].includes(child.tagName) && getComputedStyle(child).display !== 'none');
+    while (drawnChildren(element).length === 1 && !ownText(element).trim()) {
+      const [only] = drawnChildren(element);
       const a = element.getBoundingClientRect();
       const b = only.getBoundingClientRect();
-      if (frames.has(only) || texts.has(only) || ['left', 'top', 'width', 'height'].some((key) => Math.abs(a[key] - b[key]) > 1)) break;
+      const spans = (start, size) => Math.abs(a[start] - b[start]) <= 1 && Math.abs(a[size] - b[size]) <= 1;
+      if (frames.has(only) || texts.has(only) || !(spans('left', 'width') || spans('top', 'height'))) break;
       element = only;
       style = getComputedStyle(only);
     }
@@ -373,6 +380,8 @@ export async function readDom(requests) {
       const s = getComputedStyle(child);
       const rect = child.getBoundingClientRect();
       if (SKIP.includes(s.display) || ['absolute', 'fixed'].includes(s.position) || (rect.width === 0 && rect.height === 0)) continue;
+      // Content the page does not draw: the answer of a closed <details>, a content-visibility: hidden part.
+      if (child.checkVisibility?.({ visibilityProperty: true }) === false) continue;
       let item = box(rect);
       // A rotated or scaled child takes its layout box, around the same centre (a chevron at 45°).
       if (s.transform !== 'none' && 'offsetWidth' in child) {
@@ -471,6 +480,34 @@ export async function readDom(requests) {
     }
     return null;
   };
+  // The family the text is drawn with: the first of its font-family list the browser can draw. A family that
+  // is declared but neither loaded nor installed (a @font-face under another name, a file that failed) falls
+  // through to the next one, as it does on screen. Measured against two fallbacks, so a family that happens
+  // to have one fallback's widths is still seen.
+  const GENERIC = /^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|math|emoji|fangsong|-apple-system|BlinkMacSystemFont)$/i;
+  const drawn = new Map();
+  const drawnFamily = (stack) => {
+    if (drawn.has(stack)) return drawn.get(stack);
+    const probe = 'AaBbGgQqWw ЖжШщЯя 0123456789 @&';
+    const width = (font) => {
+      context.font = font;
+      return context.measureText(probe).width;
+    };
+    const families = stack.split(',').map((family) => family.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    const found =
+      families.find((family) => GENERIC.test(family) || ['monospace', 'serif'].some((base) => width(`64px "${family}", ${base}`) !== width(`64px ${base}`))) ??
+      null;
+    drawn.set(stack, found);
+    return found;
+  };
+  // What the element is drawn over: the background colour of the nearest ancestor that paints one.
+  const backdropOf = (element) => {
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      const color = plain(getComputedStyle(node).backgroundColor);
+      if (!/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(color)) return color;
+    }
+    return 'rgb(255, 255, 255)';
+  };
   const texts = new Set(elements.filter((element, i) => element && requests[i].type === 'TEXT'));
   const frames = new Set(elements.filter((element, i) => element && requests[i].type !== 'TEXT'));
   return requests.map((request, i) => {
@@ -527,6 +564,7 @@ export async function readDom(requests) {
       field,
       textBox,
       lineHeight,
+      drawnFamily: request.type === 'TEXT' ? drawnFamily(style.fontFamily) : null,
       sectionBox,
       ...(request.type !== 'TEXT' ? iconOf(element) : null),
       matchedBy: matchedBy[i],
@@ -538,6 +576,7 @@ export async function readDom(requests) {
       children: request.layout ? [...kids] : [],
       childSides: kids.sides ?? [],
       overlay: request.type !== 'TEXT' ? overlayOf(element) : null,
+      backdrop: request.type !== 'TEXT' ? backdropOf(element) : null,
       style: read(style),
     };
   });
@@ -784,8 +823,13 @@ function differences(node, dom) {
 
   if (node.type === 'TEXT') {
     if (node.fontFamily) {
-      const family = s.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '');
-      if (family.toLowerCase() !== node.fontFamily.toLowerCase()) add('font-family', node.fontFamily, family);
+      // The family drawn, not only the one declared; fontsource names its variable fonts "<Family> Variable".
+      const declared = s.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '');
+      const drawnAs = dom.drawnFamily === undefined ? declared : dom.drawnFamily;
+      const name = (family) => (family ?? '').toLowerCase().replace(/\s+variable$/, '');
+      if (name(drawnAs) !== name(node.fontFamily)) {
+        add('font-family', node.fontFamily, name(drawnAs) === name(declared) ? declared : `${declared} (not loaded: ${drawnAs ?? 'a fallback'})`);
+      }
     }
     if (node.fontSize != null && !near(parseFloat(s.fontSize), node.fontSize, PX)) add('font-size', node.fontSize, round(parseFloat(s.fontSize)));
     if (node.fontWeight != null && Number(s.fontWeight) !== node.fontWeight) add('font-weight', node.fontWeight, Number(s.fontWeight));
@@ -848,7 +892,17 @@ function differences(node, dom) {
 
   if (solid) {
     const background = flatBackground(s.backgroundColor, s.backgroundImage) ?? parseColor(s.backgroundColor);
-    if (!sameColor(solid.color, solid.opacity, background)) add('background', showColor(solid.color, solid.opacity), showDom(background));
+    // A see-through fill is what it shows over what lies behind it: 10 % of a tint over white may be written
+    // as the one opaque colour it makes.
+    const shown = (() => {
+      const behind = parseColor(dom.backdrop);
+      if ((solid.opacity ?? 1) >= 0.999 || !background || background.alpha < 0.999 || !behind || behind.alpha < 0.999) return null;
+      const a = solid.opacity;
+      return toHex(fromHex(solid.color).map((v, k) => v * a + behind.rgb[k] * (1 - a)));
+    })();
+    if (!sameColor(solid.color, solid.opacity, background) && !(shown && sameColor(shown, 1, background))) {
+      add('background', showColor(solid.color, solid.opacity), showDom(background));
+    }
   }
   const gradient = fills.find((fill) => fill.type.startsWith('GRADIENT_'));
   if (gradient?.stops) {
@@ -877,7 +931,8 @@ function differences(node, dom) {
     }
   } else if (node.cornerSmoothing > 0 && s.clipPath === 'none') {
     add('corner smoothing', `${Math.round(node.cornerSmoothing * 100)} %`, 'none');
-  } else if (node.radius != null && !(node.cornerSmoothing > 0)) {
+  } else if (node.radius != null && !(node.cornerSmoothing > 0) && !['VECTOR', 'BOOLEAN_OPERATION', 'STAR', 'POLYGON', 'LINE'].includes(node.type)) {
+    // A vector's corners are in its path, not in a corner radius: the element drawing it may round its box.
     const figmaRadii = Array.isArray(node.radius) ? node.radius : [node.radius, node.radius, node.radius, node.radius];
     const want = figmaRadii.map((r) => round(cap(r, node.width, node.height)));
     const got = domRadii.map((r) => round(cap(r, width, height)));
@@ -1127,6 +1182,7 @@ export function compareStyles(nodes, doms) {
       .map((node) => `${node.place.index} ${node.characters.trim()}`)
       .filter((key, i, all) => all.indexOf(key) !== i),
   );
+  const widths = [];
   nodes.forEach((node, i) => {
     const entry = sections.get(node.place.index) ?? { checked: 0, off: [], unmatched: 0, byId: 0, byText: 0 };
     sections.set(node.place.index, entry);
@@ -1153,7 +1209,27 @@ export function compareStyles(nodes, doms) {
     else if (dom.matchedBy) entry.byText++;
     const text = `«${node.characters?.trim().replace(/\s+/g, ' ').slice(0, 40)}»`;
     const label = node.type !== 'TEXT' ? `${node.name} ${node.id}` : repeated.has(`${node.place.index} ${node.characters.trim()}`) ? `${text} ${node.id}` : text;
-    for (const difference of differences(node, dom)) entry.off.push({ node: node.id, label, ...difference });
+    const found = differences(node, dom);
+    for (const difference of found) entry.off.push({ node: node.id, label, ...difference });
+    const width = textWidth(node, dom, found);
+    if (width) widths.push(width);
   });
-  return { sections, missingText };
+  const sorted = [...widths].sort((a, b) => a - b);
+  return { sections, missingText, textWidth: { count: sorted.length, median: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null } };
+}
+
+/**
+ * How wide a one-line hugging text is drawn against Figma's width for it (build / Figma), when nothing else
+ * about its type differs: the same family, size, weight and letter spacing. Over a screen, a median away from
+ * 1 says the font files are not the ones Figma draws with (another version of the family), which moves line
+ * breaks and centred lines by that much.
+ */
+function textWidth(node, dom, found) {
+  if (node.type !== 'TEXT' || node.textAutoResize !== 'WIDTH_AND_HEIGHT' || !dom.textBox || dom.field || !node.width) return null;
+  const line = node.lineHeight?.value;
+  if (!line || Math.abs(node.height - line) > 1 || dom.textBox.bottom - dom.textBox.top > line * 1.5) return null;
+  if (found.some((difference) => ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'text-transform'].includes(difference.property))) return null;
+  const squash = (text) => (text ?? '').replace(/\s+/g, '').toLowerCase();
+  if (squash(dom.text) !== squash(node.characters)) return null;
+  return (dom.textBox.right - dom.textBox.left) / node.width;
 }

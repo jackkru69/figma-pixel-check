@@ -280,6 +280,9 @@ const colorLimit = (section) => section.figma.maxColor ?? maxColor;
 // Without a limit, a colour difference over COLOR_MARK of the section is marked: shadows and gradients
 // rendered by two engines leave a little below that.
 const COLOR_MARK = 0.5;
+// Texts drawn this much narrower or wider than Figma draws them (median), over at least this many one-line texts.
+const TEXT_WIDTH_OFF = 0.004;
+const TEXT_WIDTH_MIN = 8;
 const styleLimit = (section) => section.figma.maxStyle ?? maxStyle;
 const styleCount = (section) => (section.styles ? section.styles.off.length + section.styles.missingText : 0);
 // Without a limit any difference is marked: a value either is Figma's or is not.
@@ -515,6 +518,7 @@ try {
       extraDom: extra,
       problems,
       missingText: styleCheck?.missingText.map((m) => ({ ...m, section: screen.sections[m.section].name })) ?? null,
+      textWidth: styleCheck?.textWidth ?? null,
     });
   }
 } finally {
@@ -654,6 +658,15 @@ for (const r of results) {
   if (styled.length) {
     lines.push('', 'Values that differ from Figma (Figma → build):');
     for (const s of styled) for (const line of styleLines(s)) lines.push(`- ${s.name}: ${line}`);
+  }
+  // Diagnostic only: one-line texts drawn narrower or wider than Figma draws them, over the whole screen.
+  const tw = r.textWidth;
+  if (tw?.count >= TEXT_WIDTH_MIN && Math.abs(tw.median - 1) >= TEXT_WIDTH_OFF) {
+    const pct = Math.abs(tw.median - 1) * 100;
+    lines.push(
+      '',
+      `Texts are drawn ${pct.toFixed(1)} % ${tw.median < 1 ? 'narrower' : 'wider'} than in Figma (median of ${tw.count} one-line texts of the same font, size and weight): the font files are probably not the ones Figma draws with (another version of the family), which moves line breaks and centred lines.`,
+    );
   }
   if (r.missingText?.length) {
     lines.push('', 'Figma text not found in its section (changed, missing or split across elements):');

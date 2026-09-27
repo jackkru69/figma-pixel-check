@@ -271,6 +271,8 @@ describe('pixel-diff --max-geometry', () => {
       frame: '1:2',
       nodes: [
         { id: '9:1', name: 'nav', type: 'FRAME', x: 0, y: 0, width: 375, height: 56, layoutMode: 'HORIZONTAL', layoutWrap: 'NO_WRAP', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'CENTER', itemSpacing: 12, padding: [0, 20, 0, 20] },
+        // The back chevron: the nav's first child, as a real export lists it.
+        { id: '9:8', name: 'back', type: 'VECTOR', x: 22, y: 23, width: 10, height: 10 },
         text('9:2', 'Profile', 18, { fontSize: 17, fontWeight: 600 }),
         { id: '9:7', name: 'hero', type: 'FRAME', x: 0, y: 56, width: 375, height: 180, layoutMode: 'VERTICAL', primaryAxisAlignItems: 'MIN', counterAxisAlignItems: 'CENTER', itemSpacing: 0, padding: [16, 20, 24, 20] },
         text('9:3', 'Alex Kim', 150, { fontSize: 20, fontWeight: 600, lineHeight: { unit: 'PIXELS', value: 24 } }),

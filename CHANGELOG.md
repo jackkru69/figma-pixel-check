@@ -25,6 +25,11 @@
   thin boxes. Painted frames without `data-node-id` are now found by their box when that is unambiguous.
 - The benchmark pairs repeated section names by occurrence (the second of two sections with one name was compared with the first).
 - `test/mutate.mjs` writes an external case's mutations from its build alone.
+- From the second external round (77 screens, all with Figma's values): painted frames found through their own
+  texts, rendered text only, colour filters reported, Figma fill stacks resolved, repeated differences grouped in
+  the report; `figma-styles.js` replaces U+2028 (it cut the MCP message), exports text alignment, decoration,
+  truncation, masks and clipping, and leaves defaults out; the benchmark counts a changed value of a known
+  difference and leaves out mutations that change fewer than 16 pixels.
 
 ## 0.5.0 — 2026-09-26
 

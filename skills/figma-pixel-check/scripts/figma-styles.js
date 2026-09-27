@@ -13,6 +13,10 @@ if (!frame || !('children' in frame)) throw new Error(`No frame ${FRAME}`);
 const box = frame.absoluteBoundingBox;
 const mixed = (value) => (value === figma.mixed ? null : value);
 const round = (value) => (typeof value === 'number' ? Math.round(value * 100) / 100 : value);
+// Figma's soft line break (Shift+Enter) is U+2028; the MCP transport cuts its message at it, so line and
+// paragraph separators become plain line breaks, which mean the same in a text.
+const SEPARATORS = new RegExp(`[${String.fromCharCode(0x2028, 0x2029)}]`, 'g');
+const clean = (text) => (typeof text === 'string' ? text.replace(SEPARATORS, '\n') : text);
 const hex = ({ r, g, b }) =>
   `#${[r, g, b].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 const paints = (list) =>
@@ -38,7 +42,7 @@ const walk = (node, parentOpacity) => {
   const opacity = node.opacity ?? 1;
   const entry = {
     id: node.id,
-    name: node.name,
+    name: clean(node.name),
     type: node.type,
     x: b ? round(b.x - box.x) : null,
     y: b ? round(b.y - box.y) : null,
@@ -49,12 +53,15 @@ const walk = (node, parentOpacity) => {
     effectiveOpacity: round(parentOpacity * opacity),
     fills: 'fills' in node ? paints(mixed(node.fills)) : null,
   };
-  if ('layoutSizingHorizontal' in node) entry.sizing = [node.layoutSizingHorizontal, node.layoutSizingVertical];
+  // FIXED × FIXED is the default and left out, like every default below, to spend fewer calls on big frames.
+  if ('layoutSizingHorizontal' in node && !(node.layoutSizingHorizontal === 'FIXED' && node.layoutSizingVertical === 'FIXED')) {
+    entry.sizing = [node.layoutSizingHorizontal, node.layoutSizingVertical];
+  }
   if (node.layoutPositioning === 'ABSOLUTE') entry.layoutPositioning = 'ABSOLUTE';
   if (node.isMask) entry.isMask = true;
   if (node.type === 'TEXT') {
     Object.assign(entry, {
-      characters: node.characters,
+      characters: clean(node.characters),
       fontFamily: mixed(node.fontName)?.family ?? null,
       fontStyle: mixed(node.fontName)?.style ?? null,
       fontWeight: mixed(node.fontWeight),
@@ -63,6 +70,13 @@ const walk = (node, parentOpacity) => {
       letterSpacing: mixed(node.letterSpacing),
       textCase: mixed(node.textCase),
     });
+    const align = mixed(node.textAlignHorizontal);
+    if (align && align !== 'LEFT') entry.textAlign = align;
+    const decoration = mixed(node.textDecoration);
+    if (decoration && decoration !== 'NONE') entry.textDecoration = decoration;
+    // WIDTH_AND_HEIGHT: the box follows the text, so its alignment inside the box cannot show.
+    entry.textAutoResize = node.textAutoResize;
+    if (node.textTruncation === 'ENDING') entry.truncate = node.maxLines ?? true;
   } else {
     if ('cornerRadius' in node) {
       entry.radius =
@@ -100,14 +114,15 @@ const walk = (node, parentOpacity) => {
     if ('layoutMode' in node && node.layoutMode !== 'NONE') {
       Object.assign(entry, {
         layoutMode: node.layoutMode,
-        layoutWrap: node.layoutWrap,
         primaryAxisAlignItems: node.primaryAxisAlignItems,
         counterAxisAlignItems: node.counterAxisAlignItems,
         itemSpacing: node.itemSpacing,
         padding: [node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft],
-        strokesIncludedInLayout: node.strokesIncludedInLayout ?? false,
       });
+      if (node.layoutWrap === 'WRAP') entry.layoutWrap = 'WRAP';
+      if (node.strokesIncludedInLayout) entry.strokesIncludedInLayout = true;
     }
+    if (node.clipsContent) entry.clips = true;
   }
   // Leave out what is empty or the default, so the file stays small.
   for (const [key, value] of Object.entries(entry)) {
@@ -120,4 +135,4 @@ const walk = (node, parentOpacity) => {
 };
 frame.children.forEach((child) => walk(child, 1));
 const next = FROM + COUNT < nodes.length ? FROM + COUNT : null;
-return { frame: frame.id, name: frame.name, width: frame.width, height: frame.height, total: nodes.length, next, nodes: nodes.slice(FROM, FROM + COUNT) };
+return { frame: frame.id, name: clean(frame.name), width: frame.width, height: frame.height, total: nodes.length, next, nodes: nodes.slice(FROM, FROM + COUNT) };

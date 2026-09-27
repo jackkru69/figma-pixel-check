@@ -80,6 +80,8 @@ design/figma/
   its element's left edge and width are checked too (**Δ left**, **Δ width**), and it takes its flow
   reference only from sections above that share its columns. Use them for a sidebar, a content column and a
   right panel side by side, or for cards in a row.
+- Half a pixel is no difference: a box Figma places at 176.5, written 176 in the sections file and snapped to
+  177 in the page, shows Δ top 0.
 - `maxGeometry` (px), `maxMismatch` (%), `maxColor` (%) and `maxStyle` (a count) (optional) replace the
   `--max-geometry` / `--max-section` / `--max-color` / `--max-style` limits for one section, stricter or looser,
   in runs that pass that flag;
@@ -193,7 +195,8 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
      element whose own text is the node's;
    - the build's split (`<span>Hello</span> <span>John</span>` for one node): the element wrapping the pieces.
 
-   Never a part of a text: `Alex` is not found in `Alex Kim`. Equal texts of one section (three "Edit"
+   Never a part of a text: `Alex` is not found in `Alex Kim`. The text of an element is what it renders: a part
+   hidden with `display: none` or `visibility: hidden` does not count. Equal texts of one section (three "Edit"
    buttons) pair with their elements by where they are drawn, nearest first, not by DOM order; a visible
    element wins over a hidden copy. A text the build writes differently (translated, formatted, or cut) is
    not found and is listed: give it its `data-node-id`. The attributes can live in the preview build only.
@@ -202,15 +205,35 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    A node that paints (a fill, a stroke, a shadow) and has no `data-node-id` is found by its box: the one
    element of its section with a background, border, shadow or outline at the same place and size, within
    1 px. Two painted candidates, or two painted Figma nodes on the same box (a frame and its background
-   rectangle), leave it unmatched rather than guessed. Such an element's children need not be Figma's (a
+   rectangle), leave it unmatched rather than guessed. When the box does not settle it, a painted node that
+   holds texts of its own (a button's label, a card's title: texts whose innermost painted node it is) is found
+   through them: the nearest painted element around all of their elements. That does not depend on the box, so
+   a button grown by a wrong padding or a card with a wrong radius is still found, and reported. Such an element's children need not be Figma's (a
    build may drop a wrapper frame), so its Auto Layout gap is compared only when it has as many children as
    the Figma node; its padding always.
 
-   What Figma draws under an opaque layer painted later (a row behind a banner, a leftover label under a card)
-   is not visible in the design and is not looked for.
+   Spacing is measured from the element's box to its children's boxes, so a few things are allowed for: a gap
+   exists only between two children or more (the itemSpacing of a frame with one child draws nothing); a
+   child's centred or outside stroke (a ring drawn into an icon's image, a zero-height divider line) reaches
+   past its Figma box, and that much is tolerated; and a frame whose only child is an Auto Layout frame may be
+   one element in the build, with both paddings added.
+
+   A text's line height is the one it draws: an inline element inside a block with a taller line takes the
+   block's. A text outside Auto Layout is placed by its glyphs, not by its element: across by the edge its
+   alignment keeps (the centre when the box hugs the text), down by the centre when the text sets the box's
+   height, within 2 px. A drop shadow may also be `filter: drop-shadow()`, whose blur is σ, half of
+   box-shadow's.
+
+   What the design does not show is not looked for: a layer under an opaque layer painted later (a row behind
+   a banner, a leftover label under a card), one beyond the frame's edges or covered where it is not, one at 0 %
+   opacity, and the extra copies of a text stacked on itself. A lone `|` text is a caret or a divider glyph: it
+   is not required, and a field's text matches Figma's even when Figma draws the caret after it (`100|`).
 
    Colours are read in any notation the build uses (`oklab()` from Tailwind's opacity modifiers, `oklch()`,
-   `color()`, `color-mix()`): the browser converts them. Shadows that draw nothing (transparent, or without
+   `color()`, `color-mix()`): the browser converts them. Figma's fills stack bottom to top: what lies under the
+   topmost opaque fill is not compared, and solid fills above it are blended into the one colour the build
+   may draw. A colour `filter` (brightness, contrast, invert…) is reported, since Figma has none, except on
+   images and SVG, where recolouring an icon that way is common. Shadows that draw nothing (transparent, or without
    offset, blur and spread, as Tailwind lists on every element) do not count as a shadow; a border of 0 px
    counts as no border; a one-sided stroke may be an inset shadow moved by its weight (`inset 0 -1px 0 0`); a
    Figma line may be a border or a thin box filled with its colour.

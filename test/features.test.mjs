@@ -269,6 +269,96 @@ describe('values found without ids, in the notations builds use', () => {
       assert.deepEqual(offs('settings'), ['row 9:50 stroke bottom #EAECF0 → #D0D5DD', 'Line 9:51 line #EAECF0 → #D0D5DD']);
     });
   });
+  test('a painted frame is found through its own texts, so a wrong size, padding or radius is still reported', () => {
+    // The Sign out button without an id; its label is found by its text, the button around it by that label.
+    const label = { id: '9:6', name: 'Sign out', type: 'TEXT', x: 158, y: 530, width: 60, height: 20, characters: 'Sign out', fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] };
+    styles([button, label]);
+    withSite({ css: '.action button { padding-top: 14px; height: 62px; border-radius: 8px; }' }, () => {
+      run('pixel-diff.mjs');
+      const lines = offs('action');
+      assert.ok(lines.includes('button 9:5 radius 14 → 8'), lines.join('\n'));
+      assert.equal(section(results()[0], 'action').styles.unmatched, 0);
+    });
+  });
+
+  test('a text hidden inside a paragraph is not part of what the paragraph shows', () => {
+    styles([frame('9:7', 'hero', 56, 180), handle({ characters: '@alexkim online' })]);
+    withSite({ html: (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<p class="hero__handle">@alexkim <span class="state">online</span></p>') }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(styled('hero').missingText, 0);
+    });
+    withSite({ html: (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<p class="hero__handle">@alexkim <span class="state">online</span></p>'), css: '.state { display: none; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(styled('hero').missingText, 1);
+    });
+  });
+
+  test('a colour filter the design does not have is reported; fills under an opaque one are not compared', () => {
+    styles([button]);
+    withSite({ css: '.action button { filter: brightness(0.9); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), ['button 9:5 filter none → brightness(0.9)']);
+    });
+    // Figma: a solid colour under an opaque gradient; the build draws the gradient alone.
+    styles([{ ...button, fills: [{ type: 'SOLID', color: '#0A2239', opacity: 1 }, { type: 'GRADIENT_LINEAR', opacity: 1, stops: [{ color: '#FDE8E8', alpha: 1, position: 0 }, { color: '#FBD5D5', alpha: 1, position: 1 }] }] }]);
+    withSite({ css: '.action button { background: linear-gradient(90deg, #fde8e8, #fbd5d5); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+    // Two solid fills blend: white under 10 % red is drawn as one colour.
+    styles([{ ...button, fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }, { type: 'SOLID', color: '#C9302C', opacity: 0.1 }] }]);
+    withSite({ css: '.action button { background: #faeaea; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+  });
+  test('a drop shadow drawn as filter: drop-shadow() takes half the blur; a caret and stacked copies are not texts to find', () => {
+    const shadow = { type: 'DROP_SHADOW', x: 4, y: 4, radius: 16, spread: 0, color: '#000000', alpha: 0.2 };
+    styles([{ ...button, effects: [shadow] }]);
+    withSite({ css: '.action button { filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.2)); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), []);
+    });
+    withSite({ css: '.action button { filter: drop-shadow(4px 4px 16px rgba(0, 0, 0, 0.2)); }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('action'), ['button 9:5 shadow 4 4 16 0 #000000 20 % → 4 4 32 0 #000000 20 %']);
+    });
+    // A focused field drawn with its caret, a lone caret, and the same label stacked twice.
+    styles([
+      frame('9:7', 'hero', 56, 180),
+      handle({ characters: '@alexkim|' }),
+      { ...handle(), id: '9:9', characters: '|', x: 230, width: 2 },
+      { ...handle(), id: '9:10', characters: 'Alex Kim', x: 150, y: 150 },
+      { ...handle(), id: '9:11', characters: 'Alex Kim', x: 150, y: 150 },
+    ]);
+    withSite({ html: (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<input class="hero__handle" value="@alexkim" aria-label="Handle">'), css: '.hero__handle { border: 0; background: none; font: inherit; color: #6b7080; width: 75px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(styled('hero').missingText, 0);
+    });
+  });
+
+  test('half a pixel is no geometry difference; more is', () => {
+    rmSync(join(dir, 'design/styles'), { recursive: true, force: true });
+    withSite({ css: '.nav { height: 56.5px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(section(results()[0], 'nav').dHeight, 0);
+    });
+    withSite({ css: '.nav { height: 56.6px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(section(results()[0], 'nav').dHeight, 1);
+    });
+  });
+  test("a bare label in a button is placed by its glyphs, not by the button's box", () => {
+    // Figma's hugging label centred in the 335×48 button (not in Auto Layout, so its position is checked).
+    const label = { id: '9:6', name: 'Sign out', type: 'TEXT', x: 157.5, y: 530, width: 60, height: 20, characters: 'Sign out', textAutoResize: 'WIDTH_AND_HEIGHT', fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] };
+    styles([label]);
+    run('pixel-diff.mjs');
+    assert.deepEqual(offs('action').filter((line) => line.includes('position')), []);
+    withSite({ css: '.action button { text-align: left; padding-left: 16px; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.equal(offs('action').filter((line) => line.includes('position')).length, 1);
+    });
+  });
 });
 
 describe('icon styles', () => {

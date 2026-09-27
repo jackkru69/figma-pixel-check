@@ -95,8 +95,10 @@ function signals(base, mutated) {
     }
     const pp = (section.mismatch - before.mismatch) * 100;
     if (pp >= WEAK) add(key, { type: pp >= STRONG ? 'pixel' : 'pixel-weak', detail: `mismatch +${pp.toFixed(2)} pp` });
-    const was = new Set((before.styles?.off ?? []).map((off) => `${off.node} ${off.property}`));
-    const values = (section.styles?.off ?? []).filter((off) => !was.has(`${off.node} ${off.property}`));
+    // A value that newly differs from Figma's, or that already differed and changed again (a colour that was a
+    // token off and is now another one).
+    const was = new Map((before.styles?.off ?? []).map((off) => [`${off.node} ${off.property}`, String(off.dom)]));
+    const values = (section.styles?.off ?? []).filter((off) => was.get(`${off.node} ${off.property}`) !== String(off.dom));
     const texts = (section.styles?.missingText ?? 0) - (before.styles?.missingText ?? 0);
     if (values.length || texts > 0) {
       const detail = [...values.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`), ...(texts > 0 ? [`${texts} text(s) not found`] : [])];
@@ -123,8 +125,14 @@ function signals(base, mutated) {
   return bySection;
 }
 
+// A mutation that changes fewer pixels than this draws nothing anyone would see (a radius past a pill's half
+// height, a gap in a container with free space): it is left out, like one that changes nothing.
+const INVISIBLE_PIXELS = 16;
+
 function verdict(mutation, base, mutated) {
   if (base.png.equals(mutated.png)) return { status: 'invalid', signals: {} };
+  const changed = changedPixels(base.png, mutated.png);
+  if (changed < INVISIBLE_PIXELS) return { status: 'invalid', changed, signals: {} };
   const bySection = signals(base, mutated);
   // A section nested in the mutated one (a card section inside its band) is part of it. A repeated section is
   // named by its occurrence ("occurrence": 1 is the second banner, keyed banner#2).
@@ -151,11 +159,26 @@ function verdict(mutation, base, mutated) {
   return { status, alsoElsewhere, signals: Object.fromEntries(bySection) };
 }
 
-/** Share of two captures that differs: pixelmatch at its strict default, anti-aliasing left out. */
-function captureDifference(a, b) {
+/** Pixels of two captures that differ: pixelmatch at a strict threshold, anti-aliasing left out. */
+function capturePixels(a, b) {
   const [x, y] = [PNG.sync.read(a), PNG.sync.read(b)];
-  if (x.width !== y.width || x.height !== y.height) return 1;
-  return pixelmatch(x.data, y.data, null, x.width, x.height, { threshold: 0.1 }) / (x.width * x.height);
+  if (x.width !== y.width || x.height !== y.height) return Infinity;
+  return pixelmatch(x.data, y.data, null, x.width, x.height, { threshold: 0.1 });
+}
+/** Pixels of two captures that differ at all, however little (a neighbouring colour token on small text counts). */
+function changedPixels(a, b) {
+  const [x, y] = [PNG.sync.read(a), PNG.sync.read(b)];
+  if (x.width !== y.width || x.height !== y.height) return Infinity;
+  let n = 0;
+  for (let i = 0; i < x.data.length; i += 4) {
+    if (x.data[i] !== y.data[i] || x.data[i + 1] !== y.data[i + 1] || x.data[i + 2] !== y.data[i + 2]) n++;
+  }
+  return n;
+}
+/** Share of two captures that differs. */
+function captureDifference(a, b) {
+  const x = PNG.sync.read(a);
+  return capturePixels(a, b) / (x.width * x.height);
 }
 
 function equivalentVerdict(base, variant) {
@@ -267,7 +290,7 @@ const lines = [
   `a colour share over the report's ${COLOR_MARK} % mark, or a value that differs from Figma's. **Weak**: only a smaller signal`,
   `there (mismatch ≥ ${WEAK} pp, colour ≥ ${COLOR_WEAK} pp, a spacing value below the flag). **Misattributed**: a signal only in`,
   'other sections. **Missed**: nothing. **Also elsewhere**: detected, and other sections raised a signal too.',
-  'Invalid mutations (the capture did not change) are left out.',
+  `Invalid mutations (the capture did not change, or fewer than ${INVISIBLE_PIXELS} pixels of it) are left out.`,
   '',
   `**False positive**: an equivalent implementation whose capture stayed the same (≤ ${EQUIVALENT_PIXELS * 100} % of pixels differ) and still`,
   'raised a signal. **Not equivalent**: its capture changed, so the entry is not a fair test (left out of the rate).',

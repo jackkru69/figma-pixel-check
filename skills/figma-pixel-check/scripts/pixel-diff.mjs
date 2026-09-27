@@ -249,12 +249,16 @@ function closestAbove(figma, boxes) {
 // Both boxes are whole pixels (snapped by their edges), so the deltas are what the report shows.
 function geometry(figma, dom, above) {
   const shift = dom.top - figma.top;
+  // Half a pixel is no difference: a box Figma places at 176.5 may be written 176 in the sections file and is
+  // snapped to 177 in the page; whole pixels cannot tell them apart.
+  const whole = (value, raw) => (Math.abs(raw) <= 0.5 ? 0 : value);
   const flow = above
     ? dom.top - (above.dom.top + above.dom.height) - (figma.top - (above.figma.top + above.figma.height))
     : shift;
+  const dTop = Math.abs(flow) < Math.abs(shift) ? flow : shift;
   const result = {
-    dTop: (Math.abs(flow) < Math.abs(shift) ? flow : shift) || 0, // no -0 in the report
-    dHeight: dom.height - figma.height || 0,
+    dTop: whole(dTop, dom.rawTop !== undefined ? dTop - (dom.top - dom.rawTop) : dTop) || 0, // no -0 in the report
+    dHeight: whole(dom.height - figma.height, dom.rawHeight !== undefined ? dom.rawHeight - figma.height : dom.height - figma.height) || 0,
   };
   // A region is also placed across: its left edge and width against Figma's.
   if ('left' in figma) Object.assign(result, { dLeft: dom.left - figma.left || 0, dWidth: dom.width - figma.width || 0 });
@@ -428,7 +432,7 @@ try {
     const { matched, extra } = matchSections(screen.sections, domSections);
     const boxes = matched.map(({ figma, dom }) => ({
       figma,
-      dom: dom && { ...snap(dom.top, dom.height), ...('left' in figma ? toX(snap(dom.left, dom.width)) : {}) },
+      dom: dom && { ...snap(dom.top, dom.height), rawTop: dom.top, rawHeight: dom.height, ...('left' in figma ? toX(snap(dom.left, dom.width)) : {}) },
     }));
     const sections = boxes.map(({ figma, dom }, index) => {
       if (!dom) return { name: figma.name, missing: true, figma };
@@ -570,6 +574,28 @@ for (const r of results) {
   r.verdict = r.failures.length ? 'fail' : statuses.includes('warn') ? 'warn' : 'pass';
 }
 
+// The values that differ in a section, one line per node; the same difference on three or more nodes (one font
+// for another on every text) is one line that names the first of them.
+const SAME_ON = 3;
+function styleLines(section) {
+  const groups = new Map();
+  for (const off of section.styles.off) {
+    const key = `${off.property} ${off.figma} → ${off.dom}`;
+    groups.set(key, [...(groups.get(key) ?? []), off.label]);
+  }
+  const byNode = new Map();
+  const lines = [];
+  for (const [key, labels] of groups) {
+    if (labels.length >= SAME_ON) {
+      lines.push(`${key} on ${labels.length} nodes: ${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ', …' : ''}`);
+      continue;
+    }
+    for (const label of labels) byNode.set(label, [...(byNode.get(label) ?? []), key]);
+  }
+  for (const [label, list] of byNode) lines.push(`${label} ${list.join(', ')}`);
+  return lines;
+}
+
 const lines = [
   '# Pixel diff report',
   '',
@@ -627,11 +653,7 @@ for (const r of results) {
   const styled = r.sections.filter((s) => s.styles?.off.length);
   if (styled.length) {
     lines.push('', 'Values that differ from Figma (Figma → build):');
-    for (const s of styled) {
-      const byNode = new Map();
-      for (const off of s.styles.off) byNode.set(off.label, [...(byNode.get(off.label) ?? []), `${off.property} ${off.figma} → ${off.dom}`]);
-      for (const [label, list] of byNode) lines.push(`- ${s.name}: ${label} ${list.join(', ')}`);
-    }
+    for (const s of styled) for (const line of styleLines(s)) lines.push(`- ${s.name}: ${line}`);
   }
   if (r.missingText?.length) {
     lines.push('', 'Figma text not found in its section (changed, missing or split across elements):');
@@ -712,10 +734,7 @@ for (const r of results) {
       const s = checks.styles;
       block.push(`  styles: ${s.status === 'pass' ? 'pass' : `${s.value} difference${s.value === 1 ? '' : 's'}${limit(s, '')}`}`);
       if (s.status !== 'pass') {
-        const list = [
-          ...section.styles.off.map((off) => `${off.label} ${off.property} ${off.figma} → ${off.dom}`),
-          ...(section.styles.missingText ? [`${section.styles.missingText} Figma text(s) not found`] : []),
-        ];
+        const list = [...styleLines(section), ...(section.styles.missingText ? [`${section.styles.missingText} Figma text(s) not found`] : [])];
         block.push(...list.slice(0, STYLE_LINES).map((line) => `    ${line}`));
         if (list.length > STYLE_LINES) block.push(`    … ${list.length - STYLE_LINES} more in the report`);
       }

@@ -562,7 +562,7 @@ check. Upload
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
   as "no known blind spot left", not as a detection rate on other designs. The external corpus
   (`corpus/external/`, 77 screens of two projects the checks were not built on, all with Figma's values
-  exported) measures that: 706 of 742 generated mistakes, and no false finding among the 171 on the
+  exported) measures that: 706 of 744 generated mistakes, and no false finding among the 162 on the
   untouched builds. On the false-positive
   side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
   SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare

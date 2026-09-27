@@ -483,11 +483,15 @@ export async function readDom(requests) {
   // The family the text is drawn with: the first of its font-family list the browser can draw. A family that
   // is declared but neither loaded nor installed (a @font-face under another name, a file that failed) falls
   // through to the next one, as it does on screen. Measured against two fallbacks, so a family that happens
-  // to have one fallback's widths is still seen.
+  // to have one fallback's widths is still seen. Measured in the text's own weight and style: a family served
+  // as one file per weight has only the weights the page uses loaded.
   const GENERIC = /^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|math|emoji|fangsong|-apple-system|BlinkMacSystemFont)$/i;
   const drawn = new Map();
-  const drawnFamily = (stack) => {
-    if (drawn.has(stack)) return drawn.get(stack);
+  const drawnFamily = (style) => {
+    const stack = style.fontFamily;
+    const face = `${style.fontStyle} ${style.fontWeight}`;
+    const key = `${face} ${stack}`;
+    if (drawn.has(key)) return drawn.get(key);
     const probe = 'AaBbGgQqWw ЖжШщЯя 0123456789 @&';
     const width = (font) => {
       context.font = font;
@@ -495,9 +499,9 @@ export async function readDom(requests) {
     };
     const families = stack.split(',').map((family) => family.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
     const found =
-      families.find((family) => GENERIC.test(family) || ['monospace', 'serif'].some((base) => width(`64px "${family}", ${base}`) !== width(`64px ${base}`))) ??
+      families.find((family) => GENERIC.test(family) || ['monospace', 'serif'].some((base) => width(`${face} 64px "${family}", ${base}`) !== width(`${face} 64px ${base}`))) ??
       null;
-    drawn.set(stack, found);
+    drawn.set(key, found);
     return found;
   };
   // What the element is drawn over: the background colour of the nearest ancestor that paints one.
@@ -564,7 +568,7 @@ export async function readDom(requests) {
       field,
       textBox,
       lineHeight,
-      drawnFamily: request.type === 'TEXT' ? drawnFamily(style.fontFamily) : null,
+      drawnFamily: request.type === 'TEXT' ? drawnFamily(style) : null,
       sectionBox,
       ...(request.type !== 'TEXT' ? iconOf(element) : null),
       matchedBy: matchedBy[i],

@@ -450,6 +450,13 @@ describe('values found without ids, in the notations builds use', () => {
       run('pixel-diff.mjs');
       assert.deepEqual(offs('hero').filter((line) => line.includes('font-family')), []);
     });
+    // A family served one file per weight: only the weight the page uses is loaded, and that is the one drawn.
+    styles([frame('9:7', 'hero', 56, 180), handle({ fontFamily: 'Inter', fontWeight: 600 })]);
+    const semibold = '@font-face { font-family: "Inter"; src: url(inter.woff2) format("woff2"); font-weight: 600; }';
+    withSite({ css: `${semibold} .hero__handle { font-family: "Inter", sans-serif; font-weight: 600; }`, files: { 'inter.woff2': readFileSync('corpus/fonts/Inter-var.woff2') } }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((line) => line.includes('font-family')), []);
+    });
     styles([frame('9:7', 'hero', 56, 180), handle({ fontFamily: 'Nowhere Sans' })]);
     withSite({ css: '.hero__handle { font-family: "Nowhere Sans", monospace; }' }, () => {
       run('pixel-diff.mjs');

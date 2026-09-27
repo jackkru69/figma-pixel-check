@@ -186,8 +186,8 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
   CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), all with Figma's own
   values exported, so only their counts are published
   ([`corpus/external/README.md`](corpus/external/README.md) has the rules). Mistakes are generated from each
-  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 706 of
-  744 (95 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
+  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 710 of
+  736 (96 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
   mark **162 findings, all looked at: 162 real gaps, 0 false** (another font family than the design's,
   a colour one token off, a radius without Figma's corner smoothing, a pill 2 px short).
 
@@ -237,7 +237,7 @@ problem to a general, non-private reproduction and contribute an issue or a regr
 секции расхождение, `report.html` — эталон, сборку и diff рядом, `drift.mjs` — что стало лучше или хуже с
 прошлого запуска. Внутренний корпус (168 из 168 мутаций, 1 ложное срабатывание из 27 эквивалентных
 реализаций) и внешний «невиденный» корпус считаются раздельно: на 77 экранах двух проектов, под которые
-проверка не писалась, обнаружено 706 из 744 мутаций (95 %), а на нетронутых сборках все 162 находки
+проверка не писалась, обнаружено 710 из 736 мутаций (96 %), а на нетронутых сборках все 162 находки
 разобраны по картинкам: 162 реальных расхождения, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.

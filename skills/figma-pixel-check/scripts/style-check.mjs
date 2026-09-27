@@ -321,8 +321,9 @@ export async function readDom(requests) {
     if (elements[i] || !request.texts?.length) return;
     const section = sectionsByName.get(request.section)?.[request.occurrence];
     if (!section) return;
+    // Most of them found is enough (a footnote the build splits in two paragraphs is not found as one text).
     const found = request.texts.map((id) => elements[byId.get(id)]).filter(Boolean);
-    if (found.length !== request.texts.length) return;
+    if (!found.length || found.length * 2 < request.texts.length) return;
     const around = new Set(found.map((element) => paintedAround(element, section)));
     const [only] = around;
     if (around.size !== 1 || !only || claimed.has(only)) return;

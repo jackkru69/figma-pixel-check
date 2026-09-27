@@ -281,6 +281,15 @@ describe('values found without ids, in the notations builds use', () => {
     });
   });
 
+  test('a painted frame is found through most of its texts when the build writes one of them differently', () => {
+    // The first stat card: «128» and «Posts» are found, a third Figma text is not in the build.
+    const card = { id: '9:20', name: 'stat', type: 'FRAME', x: 20, y: 236, width: 104, height: 64, radius: 12, fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }] };
+    const texts = [['9:21', '128', 250], ['9:22', 'Posts', 272], ['9:23', 'this month', 286]].map(([id, characters, y]) => ({ id, name: characters, type: 'TEXT', x: 40, y, width: 60, height: 12, characters, fills: [{ type: 'SOLID', color: '#1F2230', opacity: 1 }] }));
+    styles([card, ...texts]);
+    run('pixel-diff.mjs');
+    assert.ok(offs('stats').includes('stat 9:20 radius 12 → 16'), offs('stats').join('\n'));
+  });
+
   test('a text hidden inside a paragraph is not part of what the paragraph shows', () => {
     styles([frame('9:7', 'hero', 56, 180), handle({ characters: '@alexkim online' })]);
     withSite({ html: (h) => h.replace('<p class="hero__handle">@alexkim</p>', '<p class="hero__handle">@alexkim <span class="state">online</span></p>') }, () => {

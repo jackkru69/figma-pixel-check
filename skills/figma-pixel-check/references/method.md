@@ -208,7 +208,8 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    1 px. Two painted candidates, or two painted Figma nodes on the same box (a frame and its background
    rectangle), leave it unmatched rather than guessed. When the box does not settle it, a painted node that
    holds texts of its own (a button's label, a card's title: texts whose innermost painted node it is) is found
-   through them: the nearest painted element around all of their elements. That does not depend on the box, so
+   through them: the nearest painted element around all of their elements that are found (at least half of
+   them: a footnote the build splits in two paragraphs is not found as one text). That does not depend on the box, so
    a button grown by a wrong padding or a card with a wrong radius is still found, and reported. Such an element's children need not be Figma's (a
    build may drop a wrapper frame), so its Auto Layout gap is compared only when it has as many children as
    the Figma node; its padding always.
@@ -562,7 +563,7 @@ check. Upload
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
   as "no known blind spot left", not as a detection rate on other designs. The external corpus
   (`corpus/external/`, 77 screens of two projects the checks were not built on, all with Figma's values
-  exported) measures that: 706 of 744 generated mistakes, and no false finding among the 162 on the
+  exported) measures that: 710 of 736 generated mistakes, and no false finding among the 162 on the
   untouched builds. On the false-positive
   side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
   SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare

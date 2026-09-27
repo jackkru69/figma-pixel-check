@@ -11,6 +11,9 @@
   (it found Inter 4 where the files draw Inter 3.19), see-through fills compared over their backdrop, strokes
   of a same-box overlay, vectors neither compared by radius nor taken as text boxes, closed `<details>`
   content and `<script>` siblings ignored when measuring spacing, wrappers spanning one axis looked through.
+- From the missed mutations: a painted frame is found through most of its texts, not only all of them.
+  Finding unpainted Auto Layout frames by their texts was tried and left out: builds place padding on other
+  levels than Figma, and it marked 80 false paddings for one more detected gap.
 
 ## 0.6.0 — 2026-09-27
 

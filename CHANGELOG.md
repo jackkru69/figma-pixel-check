@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- When the checker itself is wrong: a short path in the skill (verify, classify, check upstream, reduce to a
+  synthetic case, regression test first, general fix only, benchmarks, then ask) with the full rules in
+  `references/upstream.md`; nothing is published upstream without the user's explicit approval.
+  `CONTRIBUTING.md` and issue and pull request templates ask for the same.
+
 ## 0.6.0 — 2026-09-27
 
 - Hotspots: boxes where a section's mismatch is, in section and frame pixels, outlined on

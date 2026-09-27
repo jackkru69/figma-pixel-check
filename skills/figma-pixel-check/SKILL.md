@@ -129,3 +129,26 @@ Skip this if the project already has `figma-pixel.config.json`.
    `maxGeometry` / `maxMismatch` / `maxColor` / `maxStyle` and `reason` on its section in the sections file.
    `drift.mjs --against <snapshot>` (optional) says what got better or worse since the previous run; it never
    fails a job, Figma stays the reference.
+
+## Upstream bugs and false positives
+
+Rare, and only when the evidence says the checker itself is wrong: a correct page reported as different, a
+real difference missed, a crash on valid input, a general HTML/CSS/SVG pattern or a Figma value handled
+wrongly. Never because a result is inconvenient, and never as a hunt during normal work. Details:
+[references/upstream.md](references/upstream.md).
+
+If the checker itself appears wrong:
+
+1. Verify the build actually matches Figma (reference, render, crops, Figma's values, matched element); if it
+   does not, fix the build and stop here.
+2. Classify the issue (false positive, false negative, crash, unsupported general pattern, docs, test, unclear).
+3. Check the latest upstream version and issues; do not duplicate a known one.
+4. Reduce it to a synthetic, non-private reproduction.
+5. Add a regression test, in a clone of the upstream repository, before the fix.
+6. Implement only a general fix: no condition on a project's classes, texts, screens or node ids.
+7. Run the relevant tests and benchmarks and report before and after.
+8. Offer an upstream issue or pull request.
+9. Publish nothing without explicit user approval.
+
+Never publish a user's reproduction, source code, Figma data, screenshots, or open an upstream issue/PR
+without explicit user approval.

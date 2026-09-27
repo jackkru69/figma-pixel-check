@@ -548,8 +548,11 @@ check. Upload
   styles (see [Style check](#style-check)): with them the corpus benchmark detects all 168 realistic mistakes,
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
   as "no known blind spot left", not as a detection rate on other designs. The external corpus
-  (`corpus/external/`, 18 screens of two projects the checks were not built on) measures that: 143 of 230
-  generated mistakes, 48 of 52 where Figma's values were exported. On the false-positive
+  (`corpus/external/`, 77 screens of two projects the checks were not built on, all with Figma's values
+  exported) measures that: 706 of 742 generated mistakes, and no false finding among the 171 on the
+  untouched builds. On the false-positive
   side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
   SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare
   a gradient's angle (the colour check sees a wrong one) nor a raster image's content.
+- When the checker itself is wrong (a correct page reported, a real difference missed, a crash), the way to
+  a general, regression-tested fix without publishing a project's data is in [upstream.md](upstream.md).

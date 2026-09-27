@@ -212,6 +212,12 @@ not seen. The element marked for a band must span it. No check here catches ever
 above say what was measured and where. Each limit is spelled out in the
 [method reference](skills/figma-pixel-check/references/method.md#limits).
 
+## Contributing
+
+Found a real-world false positive or a missed difference? These are valuable regression cases. Reduce the
+problem to a general, non-private reproduction and contribute an issue or a regression-tested fix
+([CONTRIBUTING.md](CONTRIBUTING.md)). Never publish project or Figma data without its owner's approval.
+
 ---
 
 ## По-русски
@@ -235,6 +241,10 @@ above say what was measured and where. Each limit is spelled out in the
 разобраны по картинкам: 171 реальное расхождение, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.
+
+Ложное срабатывание или пропущенное отличие на реальном проекте — ценный регрессионный случай: сведите его к
+общему синтетическому примеру без данных проекта ([CONTRIBUTING.md](CONTRIBUTING.md)). Скилл ничего не
+публикует upstream без явного согласия пользователя.
 
 Установка скилла: `/plugin marketplace add jackkru69/figma-pixel-check`, затем
 `/plugin install figma-pixel-check@figma-pixel-check`, или `npx skills add jackkru69/figma-pixel-check`.

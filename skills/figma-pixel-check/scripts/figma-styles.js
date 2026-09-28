@@ -36,7 +36,7 @@ const paints = (list) =>
               : { type: paint.type },
         );
 const nodes = [];
-const walk = (node, parentOpacity) => {
+const walk = (node, parentOpacity, parent) => {
   if (node.visible === false) return;
   const b = node.absoluteBoundingBox;
   const opacity = node.opacity ?? 1;
@@ -52,6 +52,8 @@ const walk = (node, parentOpacity) => {
     // With every ancestor inside the frame: what the element's opacity chain has to multiply to.
     effectiveOpacity: round(parentOpacity * opacity),
     fills: 'fills' in node ? paints(mixed(node.fills)) : null,
+    // The layer holding it (none at the frame's top level): which frames clip it.
+    parent: parent ?? null,
   };
   // FIXED × FIXED is the default and left out, like every default below, to spend fewer calls on big frames.
   if ('layoutSizingHorizontal' in node && !(node.layoutSizingHorizontal === 'FIXED' && node.layoutSizingVertical === 'FIXED')) {
@@ -132,8 +134,8 @@ const walk = (node, parentOpacity) => {
     }
   }
   nodes.push(entry);
-  if ('children' in node) node.children.forEach((child) => walk(child, parentOpacity * opacity));
+  if ('children' in node) node.children.forEach((child) => walk(child, parentOpacity * opacity, node.id));
 };
-frame.children.forEach((child) => walk(child, 1));
+frame.children.forEach((child) => walk(child, 1, null));
 const next = FROM + COUNT < nodes.length ? FROM + COUNT : null;
 return { frame: frame.id, name: clean(frame.name), width: frame.width, height: frame.height, total: nodes.length, next, nodes: nodes.slice(FROM, FROM + COUNT) };

@@ -18,6 +18,24 @@
 - From the missed mutations: a painted frame is found through most of its texts, not only all of them.
   Finding unpainted Auto Layout frames by their texts was tried and left out: builds place padding on other
   levels than Figma, and it marked 80 false paddings for one more detected gap.
+- `figma-rest-export.mjs`: exports frames' values, reference PNGs and a sections skeleton through the Figma REST
+  API (a personal access token), for files too large to read through the plugin in parts. The skeleton splits
+  an app shell into regions: panels side by side become columns, a wrapper around them is looked into, and a
+  header or footer bar overlapping a panel's edge ends the panel there.
+- From a desktop app design (dense tables, chat, three panels) built in React with styled-components: comparing
+  where a text is when its Auto Layout row has no element was tried and left out: it found 9 more mutations but
+  added about 70 false position lines on correct builds, where a text's element also holds its icon.
+  A box the frame's edge cuts (a bottom bar running past a 940 px frame) is compared by the part Figma shows
+  as well as whole, so a build that ends it at the viewport is not reported.
+- Captures are deterministic: Chromium now also runs with `--disable-partial-raster`. Without it two captures
+  of the same page differed by 15 to 166 pixels (a unit or a few of colour on edges), so mutations near the
+  benchmark's 16-pixel mark flipped between invalid and missed from run to run.
+- A layer is hidden in Figma only by what its clipping frames let an opaque layer cover: `figma-styles.js` and
+  `figma-rest-export.mjs` export each node's `parent`, and a layer's box is cut by every ancestor that clips its
+  content. A component scaled far past its small clipping card had hidden the messages below it from the style
+  check. Exports without `parent` behave as before.
+- `test/mutate.mjs` tries each mistake on the page before choosing it: a kind that changes too few pixels to
+  count (a gap in a row spaced between with room to spare) gives way to the next kind.
 
 ## 0.6.0 — 2026-09-27
 

@@ -66,8 +66,9 @@ For each screen:
 3. Render the screen alone at a preview route (`/preview/<id>` by default) and mark each band with
    `data-section="<name>"`.
 4. Optionally export Figma's values with [`figma-styles.js`](skills/figma-pixel-check/scripts/figma-styles.js)
-   (a read-only script for the Figma MCP `use_figma`) to `design/figma/styles/<id>.json`. Without it the
-   style check is skipped.
+   (a read-only script for the Figma MCP `use_figma`) to `design/figma/styles/<id>.json`, or for many screens
+   with [`figma-rest-export.mjs`](skills/figma-pixel-check/scripts/figma-rest-export.mjs) through the REST API
+   and a personal access token. Without them the style check is skipped.
 
 Then:
 
@@ -161,6 +162,7 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
 | `drift.mjs --save <file> / --against <file>` | a snapshot of this run, or what changed since one (`diff/drift.md`); never fails |
 | `review-context.mjs` | `diff/review-context.json`: what the checks found and the files to look at, for an optional independent review |
 | `figma-styles.js` | read-only script for the Figma MCP `use_figma`: every node's values, for the style check |
+| `FIGMA_TOKEN=… figma-rest-export.mjs <file-key> <node-id>[=<name>]… [--ids-file f] [--png] [--sections] [--skip-existing]` | the same values, reference PNGs and a sections skeleton (app shells split into header, columns, footer) through the Figma REST API, four frames per request |
 | `figma-boxes.py <node> [--sections]` | boxes of a frame's nodes from saved `get_metadata` XML, or a sections-file skeleton |
 | `serve-dist.mjs` | static server with an SPA fallback, used by `pixel-diff` |
 
@@ -182,14 +184,16 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
   for an inset shadow...). The one is by design: the band's space written as a margin outside the element
   marked `data-section` moves that element's box.
 - **External unseen corpus**: designs and builds the checker was not developed against, added before any
-  change for them. 80 screens: 77 from two private projects (68 mobile screens of two React builds, Tailwind and
-  CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), and 3 Figma Community
-  designs (CC BY) built independently by another model (Gemini) in Vue, Svelte and plain HTML; all with Figma's
-  own values exported. Only counts are published
+  change for them. 93 screens: 77 from two private projects (68 mobile screens of two React builds, Tailwind and
+  CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), 3 Figma Community
+  designs (CC BY) built independently by another model (Gemini) in Vue, Svelte and plain HTML, and 13 desktop
+  screens of a third private design (an app shell with three panels, dense tables, a chat and a call, a modal, long content pages) built by Gemini
+  in React with styled-components; all with Figma's own values exported. Only counts are published
   ([`corpus/external/README.md`](corpus/external/README.md) has the rules). Mistakes are generated from each
-  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 752 of
-  785 (96 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
-  mark **190 findings, all looked at: 190 real gaps, 0 false** (another font family than the design's,
+  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 888 of
+  940 (94 %)**; the app screens are the hardest (136 of 166), mostly mistakes in thin strips and bars that change
+  a few pixels. On the untouched builds the checks
+  mark **305 findings, all looked at: 305 real gaps, 0 false** (another font family than the design's,
   a colour one token off, a radius without Figma's corner smoothing, a pill 2 px short).
 
   When the cases were added, the untouched builds had 199 findings; two reviewers per case (one to label, one
@@ -238,8 +242,8 @@ problem to a general, non-private reproduction and contribute an issue or a regr
 секции расхождение, `report.html` — эталон, сборку и diff рядом, `drift.mjs` — что стало лучше или хуже с
 прошлого запуска. Внутренний корпус (168 из 168 мутаций, 1 ложное срабатывание из 27 эквивалентных
 реализаций) и внешний «невиденный» корпус считаются раздельно: на 77 экранах двух проектов, под которые
-проверка не писалась, обнаружено 752 из 785 мутаций (96 %) на 80 экранах (включая Vue, Svelte и обычный HTML), а на нетронутых
-сборках все 190 находок разобраны по картинкам: 190 реальных расхождений, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
+проверка не писалась, обнаружено 888 из 940 мутаций (94 %) на 93 экранах (включая Vue, Svelte, обычный HTML и десктопное приложение на
+styled-components), а на нетронутых сборках все 305 находок разобраны по картинкам: 305 реальных расхождений, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.
 

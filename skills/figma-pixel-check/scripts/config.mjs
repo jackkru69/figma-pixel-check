@@ -19,8 +19,10 @@ export const DEFAULTS = {
   // Chromium flags for every capture. These two draw text as Figma does, greyscale and at fractional glyph
   // positions, whatever the machine's font settings: against Figma's renders it about halved the mismatch
   // (corpus/), and it makes CI and a laptop agree.
-  // A list in the config replaces this one: repeat these two when adding a flag.
-  chromiumArgs: ['--font-render-hinting=none', '--disable-lcd-text'],
+  // --disable-partial-raster: without it two captures of the same page differ by tens to hundreds of pixels
+  // (a unit or a few of colour on edges), enough to hide a small mistake or invent one between runs.
+  // A list in the config replaces this one: repeat these three when adding a flag.
+  chromiumArgs: ['--font-render-hinting=none', '--disable-lcd-text', '--disable-partial-raster'],
   // Extra CSS applied during capture, e.g. the iOS status bar drawn in the frames: ":root { --safe-top: 53px; }".
   captureCss: '',
   // The spacing audit flags differences of at least this many pixels.

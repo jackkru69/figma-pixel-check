@@ -37,8 +37,9 @@ only their counts are in the committed report.
 `node test/mutate.mjs corpus/external/<case>` writes `mutations.json` from the build alone: for every section,
 its largest text element, largest painted box and largest laid-out container each get one typical mistake
 (font weight, text colour, font size, letter spacing, radius, padding, fill, gap, a missing item, an inset),
-the kind rotating by section. The choice depends on the DOM, not on what the checker can see, and the file is
-written once, before the first bench run.
+the kind rotating by section. A kind that changes too few pixels of the page to count (a gap in a row spaced
+between with room to spare) gives way to the next. The choice depends on the DOM and the rendered page, not on
+what the checker reports, and the file is written once, before the first bench run.
 
 ## Local reports
 

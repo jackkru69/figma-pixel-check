@@ -670,6 +670,51 @@ describe('reports', () => {
   });
 });
 
+describe('clipped by a frame', () => {
+  test('a layer is hidden only by what its clipping frames let an opaque layer cover', async () => {
+    const { readFigmaStyles } = await import('../skills/figma-pixel-check/scripts/style-check.mjs');
+    // A call card clips a huge avatar background (a component scaled far past the card); the message below the
+    // card is drawn later than nothing that covers it, so the design shows it.
+    const nodes = [
+      { id: '9:1', name: 'Message', type: 'TEXT', x: 20, y: 400, width: 200, height: 40, characters: 'Hello there', textAutoResize: 'HEIGHT', fills: [{ type: 'SOLID', color: '#FFFFFF', opacity: 1 }] },
+      { id: '9:2', name: 'Call card', type: 'FRAME', x: 0, y: 0, width: 440, height: 280, clips: true, fills: [{ type: 'SOLID', color: '#22313E', opacity: 1 }] },
+      { id: '9:3', name: 'Avatar', type: 'RECTANGLE', x: -240, y: -200, width: 930, height: 930, parent: '9:2', fills: [{ type: 'SOLID', color: '#F19154', opacity: 1 }] },
+    ];
+    const hidden = (list) => {
+      const temp = mkdtempSync(join(tmpdir(), 'figma-pixel-clip-'));
+      mkdirSync(join(temp, 'styles'));
+      writeFileSync(join(temp, 'styles', 'screen.json'), JSON.stringify({ frame: '1:1', width: 440, height: 600, nodes: list }));
+      const found = readFigmaStyles(temp, 'screen', [{ name: 'chat', top: 0, height: 600 }]);
+      rmSync(temp, { recursive: true, force: true });
+      return found.find((node) => node.id === '9:1')?.hiddenInFigma ?? 'left out';
+    };
+    assert.equal(hidden(nodes), false);
+    // Without the clipping frame the avatar would cover the message.
+    assert.equal(hidden(nodes.map((node) => (node.id === '9:2' ? { ...node, clips: false } : node))), 'left out');
+  });
+});
+
+describe('clipped by the frame', () => {
+  test("a box running past the frame's edge is compared by the part the frame shows", async () => {
+    const { readFigmaStyles, compareStyles } = await import('../skills/figma-pixel-check/scripts/style-check.mjs');
+    // A 62 px bottom bar at y 887 of a 940 px frame: Figma shows 53 px of it, and so does the build.
+    const bar = { id: '9:1', name: 'Bar', type: 'RECTANGLE', x: 0, y: 887, width: 1440, height: 62, fills: [{ type: 'SOLID', color: '#0D1E2B', opacity: 1 }] };
+    const temp = mkdtempSync(join(tmpdir(), 'figma-pixel-clip-'));
+    mkdirSync(join(temp, 'styles'));
+    writeFileSync(join(temp, 'styles', 'screen.json'), JSON.stringify({ frame: '1:1', width: 1440, height: 940, nodes: [bar] }));
+    const [node] = readFigmaStyles(temp, 'screen', [{ name: 'footer', top: 862, height: 78 }]);
+    rmSync(temp, { recursive: true, force: true });
+    const style = { backgroundColor: 'rgb(13, 30, 43)', backgroundImage: 'none', boxShadow: 'none', filter: 'none', opacity: '1', borderTopLeftRadius: '0px', borderTopRightRadius: '0px', borderBottomRightRadius: '0px', borderBottomLeftRadius: '0px' };
+    for (const side of ['Top', 'Right', 'Bottom', 'Left']) Object.assign(style, { [`border${side}Style`]: 'none', [`border${side}Width`]: '0px' });
+    const dom = (height) => ({ matchedBy: 'box', opacity: 1, children: [], childSides: [], style, box: { left: 0, right: 1440, top: 887, bottom: 887 + height } });
+    const sizes = (height) => [...compareStyles([node], [dom(height)]).sections.values()].flatMap((entry) => entry.off).filter((off) => off.property === 'size');
+    assert.deepEqual(sizes(53), []);
+    // Drawn whole past the viewport, it is the same bar; a bar of another height is still reported.
+    assert.deepEqual(sizes(62), []);
+    assert.equal(sizes(40).length, 1);
+  });
+});
+
 describe('text width', () => {
   test('one-line texts drawn narrower than in Figma are summed up over the screen', async () => {
     const { compareStyles } = await import('../skills/figma-pixel-check/scripts/style-check.mjs');
@@ -693,5 +738,83 @@ describe('text width', () => {
     // A text whose size differs says nothing about the font files.
     doms[0] = { ...doms[0], style: { ...style, fontSize: '14px' } };
     assert.equal(compareStyles(nodes, doms).textWidth.count, 7);
+  });
+});
+
+describe('REST export', () => {
+  test("a REST document becomes the plugin export's nodes and a sections skeleton", async () => {
+    const { nodesFromRest, sectionsSkeleton } = await import('../skills/figma-pixel-check/scripts/figma-rest-export.mjs');
+    const frame = {
+      id: '1:1', name: 'Screen', absoluteBoundingBox: { x: 100, y: 200, width: 375, height: 300 },
+      children: [
+        { id: '1:2', name: 'Header', type: 'FRAME', absoluteBoundingBox: { x: 100, y: 200, width: 375, height: 60 }, fills: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 } }],
+          layoutMode: 'HORIZONTAL', itemSpacing: 8, paddingLeft: 20, paddingRight: 20, counterAxisAlignItems: 'CENTER', cornerRadius: 12,
+          individualStrokeWeights: { top: 0, right: 0, bottom: 1, left: 0 }, strokes: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0, a: 1 }, opacity: 0.1 }], strokeAlign: 'INSIDE',
+          children: [{ id: '1:3', name: 'Title', type: 'TEXT', characters: 'Hello', absoluteBoundingBox: { x: 120, y: 218, width: 50, height: 24 },
+            fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0, a: 1 } }], layoutSizingHorizontal: 'HUG', layoutSizingVertical: 'HUG',
+            style: { fontFamily: 'Inter', fontWeight: 600, fontSize: 17, lineHeightPx: 24, lineHeightUnit: 'PIXELS', letterSpacing: -0.2, textAutoResize: 'WIDTH_AND_HEIGHT' } }] },
+        { id: '1:4', name: 'Hidden', type: 'RECTANGLE', visible: false, absoluteBoundingBox: { x: 100, y: 300, width: 10, height: 10 } },
+        { id: '1:5', name: 'Card list', type: 'FRAME', absoluteBoundingBox: { x: 100, y: 280, width: 375, height: 200 }, opacity: 0.5,
+          children: [{ id: '1:6', name: 'Body', type: 'TEXT', characters: 'x', absoluteBoundingBox: { x: 120, y: 290, width: 10, height: 20 }, style: { fontSize: 14 } }] },
+      ],
+    };
+    const { nodes, width, height, total } = nodesFromRest(frame);
+    assert.deepEqual([width, height, total], [375, 300, 4]);
+    const [header, title, list, body] = nodes;
+    assert.deepEqual({ x: header.x, y: header.y, radius: header.radius, padding: header.padding, counter: header.counterAxisAlignItems, weights: header.strokeWeights, stroke: header.strokes[0] },
+      { x: 0, y: 0, radius: 12, padding: [0, 20, 0, 20], counter: 'CENTER', weights: [0, 0, 1, 0], stroke: { type: 'SOLID', color: '#000000', opacity: 0.1 } });
+    assert.deepEqual({ lh: title.lineHeight, ls: title.letterSpacing, sizing: title.sizing, fill: title.fills[0].color, x: title.x },
+      { lh: { unit: 'PIXELS', value: 24 }, ls: { unit: 'PIXELS', value: -0.2 }, sizing: ['HUG', 'HUG'], fill: '#000000', x: 20 });
+    assert.equal(body.effectiveOpacity, 0.5);
+    assert.deepEqual([header.parent, title.parent, body.parent], [undefined, '1:2', '1:5']);
+    assert.deepEqual(body.lineHeight, { unit: 'AUTO' });
+    assert.equal(list.opacity, 0.5);
+    assert.deepEqual(sectionsSkeleton(frame), [{ name: 'header', top: 0, height: 70 }, { name: 'card-list', top: 70, height: 230 }]);
+  });
+
+  test('an app shell of panels side by side becomes one region per column, under a footer drawn above them', async () => {
+    const { sectionsSkeleton } = await import('../skills/figma-pixel-check/scripts/figma-rest-export.mjs');
+    const box = (name, x, y, width, height) => ({ name, absoluteBoundingBox: { x, y, width, height } });
+    const frame = { absoluteBoundingBox: { x: 0, y: 0, width: 1200, height: 800 }, children: [
+      box('Top bar', 0, 0, 1200, 60), box('Sidebar', 0, 59, 300, 760), box('Chat', 900, 60, 300, 740), box('Feed', 310, 300, 580, 600), box('Bottom bar', 0, 720, 1200, 80),
+    ] };
+    assert.deepEqual(sectionsSkeleton(frame), [
+      { name: 'top-bar', top: 0, height: 60 },
+      { name: 'sidebar', top: 60, height: 660, left: 0, width: 305 },
+      { name: 'feed', top: 60, height: 660, left: 305, width: 590 },
+      { name: 'chat', top: 60, height: 660, left: 895, width: 305 },
+      { name: 'bottom-bar', top: 720, height: 80 },
+    ]);
+  });
+
+  test('a wrapper around the panels is looked into, a landing section is not', async () => {
+    const { sectionsSkeleton } = await import('../skills/figma-pixel-check/scripts/figma-rest-export.mjs');
+    const box = (name, x, y, width, height, children) => ({ name, absoluteBoundingBox: { x, y, width, height }, ...(children ? { children } : {}) });
+    const app = { absoluteBoundingBox: { x: 0, y: 0, width: 1200, height: 800 }, children: [
+      box('Top bar', 0, 0, 1200, 60),
+      box('Body', 0, 60, 1200, 740, [box('Sidebar', 0, 60, 300, 680), box('Feed', 310, 60, 580, 680), box('Chat', 900, 60, 300, 680), box('Bottom bar', 0, 740, 1200, 60)]),
+    ] };
+    assert.deepEqual(sectionsSkeleton(app), [
+      { name: 'top-bar', top: 0, height: 60 },
+      { name: 'sidebar', top: 60, height: 680, left: 0, width: 305 },
+      { name: 'feed', top: 60, height: 680, left: 305, width: 590 },
+      { name: 'chat', top: 60, height: 680, left: 895, width: 305 },
+      { name: 'bottom-bar', top: 740, height: 60 },
+    ]);
+    const landing = { absoluteBoundingBox: { x: 0, y: 0, width: 1200, height: 1000 }, children: [
+      box('Nav', 0, 0, 1200, 80), box('Hero', 0, 80, 1200, 600, [box('Title', 100, 120, 600, 80), box('Buttons', 100, 240, 400, 50)]), box('Footer', 0, 680, 1200, 320),
+    ] };
+    assert.deepEqual(sectionsSkeleton(landing).map((section) => section.name), ['nav', 'hero', 'footer']);
+  });
+
+  test('a panel drawn over the top of the footer still ends where the footer starts', async () => {
+    const { sectionsSkeleton } = await import('../skills/figma-pixel-check/scripts/figma-rest-export.mjs');
+    const box = (name, x, y, width, height) => ({ name, absoluteBoundingBox: { x, y, width, height } });
+    const frame = { absoluteBoundingBox: { x: 0, y: 0, width: 1200, height: 800 }, children: [
+      box('Chat', 900, 60, 300, 740), box('Sidebar', 0, 59, 300, 760), box('Top bar', 0, 0, 1200, 60), box('Bottom bar', 0, 720, 1200, 80), box('Feed', 310, 100, 580, 644),
+    ] };
+    assert.deepEqual(sectionsSkeleton(frame).map((s) => [s.name, s.top, s.height, s.left ?? null]), [
+      ['top-bar', 0, 60, null], ['sidebar', 60, 660, 0], ['feed', 60, 660, 305], ['chat', 60, 660, 895], ['bottom-bar', 720, 80, null],
+    ]);
   });
 });

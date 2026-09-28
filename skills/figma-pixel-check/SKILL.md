@@ -61,7 +61,9 @@ Skip this if the project already has `figma-pixel.config.json`.
    the Figma skill it needs first, set `FRAME` to the frame's node id) and save the JSON it returns as
    `design/figma/styles/<id>.json`. One call per screen (a big frame comes in parts: while the result has a
    `next`, run it again with `FROM` set to it and append the nodes); the style check compares these values
-   with the page.
+   with the page. For many screens or very large frames, when the user has a Figma personal access token set
+   as `FIGMA_TOKEN`, [scripts/figma-rest-export.mjs](scripts/figma-rest-export.mjs) writes the same files through
+   the REST API (`--png` the references, `--sections` a sections skeleton to adjust); never print the token.
 4. **Reference PNG.** `get_screenshot(fileKey, nodeId, maxDimension ≥ the frame's longer side)` and download
    it at once, because the link expires:
    `curl -L -o design/figma/reference/<id>-<width>.png "<url>"`.

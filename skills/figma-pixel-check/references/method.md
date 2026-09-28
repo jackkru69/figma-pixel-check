@@ -99,7 +99,7 @@ design/figma/
 | `url`         | `"/preview/{id}"` | route of a screen, `{id}` = file name of `sections/<id>.json`; resolved against the server |
 | `threshold`   | `0.25`            | pixelmatch colour threshold                                                              |
 | `captureCss`  | `""`              | CSS added during capture, e.g. `":root { --safe-top: 53px; }"`                          |
-| `chromiumArgs` | text as Figma draws it | Chromium flags of every capture: `--font-render-hinting=none`, `--disable-lcd-text`. A list replaces them: repeat both when adding a flag, `[]` for Chromium's own |
+| `chromiumArgs` | text as Figma draws it | Chromium flags of every capture: `--font-render-hinting=none`, `--disable-lcd-text`, `--disable-partial-raster` (the same page captures the same pixels every run). A list replaces them: repeat all three when adding a flag, `[]` for Chromium's own |
 | `spacingFlag` | `4`               | the spacing audit flags differences of at least this many px                             |
 | `devices`     | six phones, 360–440 px | responsive audit viewports: `{name, width, height, captureCss?}`                     |
 | `screenRoot`  | `"body"`          | responsive audit: the element whose box is the screen edge; clipping inside it is intended |
@@ -185,7 +185,12 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 1. Export them once per screen, like the reference: run `scripts/figma-pixel/figma-styles.js` with the Figma
    MCP `use_figma` tool (read-only; set `FRAME` to the frame's node id) and save the returned JSON as
    `design/figma/styles/<id>.json`. `use_figma` cuts its output at about 20 KB, so a big frame comes in
-   parts: while the result has a `next`, run it again with `FROM` set to it and append the `nodes`.
+   parts: while the result has a `next`, run it again with `FROM` set to it and append the `nodes`. With a
+   Figma personal access token, `scripts/figma-pixel/figma-rest-export.mjs` writes the same files for many
+   frames through the REST API (read-only; 429 and 5xx retried, `--skip-existing` resumes), with `--png` the
+   references and with `--sections` a skeleton: top-level layers become bands, panels side by side become
+   regions, a wrapper around them is looked into, and a bar overlapping a panel's edge ends it. Names come
+   from the layers; rename them to the page's `data-section`s. An existing sections file is never overwritten.
 2. Every node is found through `data-node-id="<node id>"` on its element first, the attribute
    `get_design_context` writes: keep it on cards, buttons, chips, icons and the frames whose padding and gap
    matter. A text without one is found by its text inside its section, in this order:
@@ -251,7 +256,9 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 
    What the design does not show is not looked for: a layer under an opaque layer painted later (a row behind
    a banner, a leftover label under a card), one beyond the frame's edges or covered where it is not, one at 0 %
-   opacity, and the extra copies of a text stacked on itself. A text whose Figma box lies inside a picture of
+   opacity, and the extra copies of a text stacked on itself. A covering layer covers only what its clipping
+   frames let it (the exports record each node's `parent`): an avatar background scaled far past its small
+   clipping card hides nothing below the card. A text whose Figma box lies inside a picture of
    the build (an `<img>`, `<svg>`, `<canvas>`: a card logo, a badge) is part of that picture and is counted as
    unmatched, not missing. A lone `|` text is a caret or a divider glyph: it
    is not required, never matched to an empty field, and a field's text matches Figma's even when Figma
@@ -277,7 +284,7 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
 | Figma node | Compared with the element                                                                  |
 | ---------- | ------------------------------------------------------------------------------------------- |
 | text       | font family, size, weight, line height (AUTO: the height of a one-line Figma text box), letter spacing, the case as displayed (Figma's text case against `text-transform`), colour × every layer's opacity |
-| any other  | size on the axes Figma fixes (a hugging or filling size follows its text); opacity with its ancestors'; a solid fill against `background-color`; a gradient's first and last stops; corner radii as drawn (at most half the shorter side; an ellipse is round; a smoothed corner may be a `clip-path`) |
+| any other  | size on the axes Figma fixes (a hugging or filling size follows its text; a box the frame's edge cuts may be built whole or as the part Figma shows); opacity with its ancestors'; a solid fill against `background-color`; a gradient's first and last stops; corner radii as drawn (at most half the shorter side; an ellipse is round; a smoothed corner may be a `clip-path`) |
 | any placed by hand | its position (outside Auto Layout: a floating button, a caption on a photo, a dot in a mask): down from its section's top, across from the frame's edge, within 1 px; texts too |
 | strokes    | colour, weight and alignment: a `border` (inside, or outside when the box grew by it), an `outline` (by its offset), or a `box-shadow` ring (inset inside, outer outside, both halves centred); dashed; one-sided strokes against the border of that side, or of every child (a row's divider on its table cells). The stroke may also be drawn by a layer of the element's own box laid over it (an absolute child or a `::before`/`::after` at inset 0 with a border or ring, as a selection ring); that layer is part of the element, not a candidate of its own when the element is found by its box |
 | effects    | drop and inner shadows against `box-shadow`, and a shadow the design does not have; layer and background blur against `filter` / `backdrop-filter: blur(R/2)`; corner smoothing needs a `clip-path` |
@@ -566,9 +573,9 @@ check. Upload
   styles (see [Style check](#style-check)): with them the corpus benchmark detects all 168 realistic mistakes,
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
   as "no known blind spot left", not as a detection rate on other designs. The external corpus
-  (`corpus/external/`, 80 screens the checks were not built on, React, Astro, Vue, Svelte and plain HTML, all
-  with Figma's values exported) measures that: 752 of 785 generated mistakes, and no false finding among the 190 on the
-  untouched builds. On the false-positive
+  (`corpus/external/`, 93 screens the checks were not built on, React, Astro, Vue, Svelte, plain HTML and a
+  desktop app in styled-components, all with Figma's values exported) measures that: 888 of 940 generated
+  mistakes, and no false finding among the 305 on the untouched builds. On the false-positive
   side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
   SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare
   a gradient's angle (the colour check sees a wrong one) nor a raster image's content.

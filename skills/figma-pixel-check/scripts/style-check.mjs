@@ -73,11 +73,25 @@ export function readFigmaStyles(dir, id, sections) {
     const y = Math.max(0, node.y);
     return { x, y, width: Math.min(frameWidth, node.x + node.width) - x, height: Math.min(frameHeight, node.y + node.height) - y };
   };
+  // What a layer can cover: its box cut by every ancestor that clips its content (exports with a node's parent
+  // say which those are; a component scaled far past its small clipping card covers only the card).
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const clippedBox = (node) => {
+    let box = { x: node.x, y: node.y, width: node.width, height: node.height };
+    for (let parent = byId.get(node.parent); parent; parent = byId.get(parent.parent)) {
+      if (!parent.clips) continue;
+      const x = Math.max(box.x, parent.x);
+      const y = Math.max(box.y, parent.y);
+      box = { x, y, width: Math.min(box.x + box.width, parent.x + parent.width) - x, height: Math.min(box.y + box.height, parent.y + parent.height) - y };
+    }
+    return box;
+  };
+  const clipped = nodes.map(clippedBox);
   const occluded = (node, index) => {
     const part = shownPart(node);
     // Wholly outside the frame (a line has no height and is still inside), or under an opaque layer painted later.
     if (part.width < 0 || part.height < 0 || (frameWidth && (node.x >= frameWidth || node.y >= frameHeight))) return true;
-    return nodes.some((other, i) => i > index && opaque(other) && covers(other, part) && !covers(node, other));
+    return nodes.some((other, i) => i > index && opaque(other) && covers(clipped[i], part) && !covers(node, other));
   };
   // What the design shows: not under an opaque layer, not beyond the frame, not at 0 % (a layer hidden this way
   // is no one's parent or child), and not a stacked copy of a text.
@@ -123,6 +137,11 @@ export function readFigmaStyles(dir, id, sections) {
       flow: node.layoutPositioning !== 'ABSOLUTE' && Boolean(parents[index]?.layoutMode),
       // Hidden in the design: under an opaque layer, beyond the frame, or fully transparent (a layer at 0 %).
       hiddenInFigma: hidden[index],
+      // What the frame shows of it, when the frame's edge cuts it (a bar running past the bottom).
+      shown: (() => {
+        const part = shownPart(node);
+        return part.width < node.width - 0.5 || part.height < node.height - 0.5 ? { width: part.width, height: part.height } : null;
+      })(),
       childCount: parents.filter((parent, i) => parent === node && !duplicate(nodes[i], i)).length,
       childOverhang: Math.max(0, ...nodes.filter((other, i) => parents[i] === node || (other.strokes?.length && onEdge(node, other) && inside(i, node))).map(overhang)),
       // A frame whose only child is an Auto Layout frame: a build may draw both as one element, with both paddings.
@@ -899,7 +918,9 @@ function differences(node, dom) {
   // The box first, on the axes Figma fixes (a hugging or filling size follows its text and its siblings): when
   // it differs, its padding and gap would only repeat it.
   const [sizingX, sizingY] = node.sizing ?? ['FIXED', 'FIXED'];
-  const sized = (sizingX !== 'FIXED' || near(width, node.width, SIZE)) && (sizingY !== 'FIXED' || near(height, node.height, SIZE));
+  // A box the frame's edge cuts may be built as the part Figma shows (it ends at the viewport) or whole.
+  const fits = (dom, figma, shown) => near(dom, figma, SIZE) || (shown !== undefined && near(dom, shown, SIZE));
+  const sized = (sizingX !== 'FIXED' || fits(width, node.width, node.shown?.width)) && (sizingY !== 'FIXED' || fits(height, node.height, node.shown?.height));
   if (!sized) add('size', `${round(node.width)}×${round(node.height)}`, `${round(width)}×${round(height)}`);
   if (!near(dom.opacity, opacity, ALPHA)) add('opacity', opacity, round(dom.opacity));
   filterDifference();

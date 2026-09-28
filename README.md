@@ -182,13 +182,14 @@ difference. `npm test` runs the CI limits against a copy of it and the corpus be
   for an inset shadow...). The one is by design: the band's space written as a margin outside the element
   marked `data-section` moves that element's box.
 - **External unseen corpus**: designs and builds the checker was not developed against, added before any
-  change for them. 77 screens from two private projects (68 mobile screens of two React builds, Tailwind and
-  CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), all with Figma's own
-  values exported, so only their counts are published
+  change for them. 80 screens: 77 from two private projects (68 mobile screens of two React builds, Tailwind and
+  CSS modules; an Astro + Tailwind landing page as whole-page frames at four widths), and 3 Figma Community
+  designs (CC BY) built independently by another model (Gemini) in Vue, Svelte and plain HTML; all with Figma's
+  own values exported. Only counts are published
   ([`corpus/external/README.md`](corpus/external/README.md) has the rules). Mistakes are generated from each
-  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 710 of
-  736 (96 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
-  mark **162 findings, all looked at: 162 real gaps, 0 false** (another font family than the design's,
+  build by [`test/mutate.mjs`](test/mutate.mjs), not written with the checker in mind. **Detection: 752 of
+  785 (96 %)**, up from 681 of 741 (92 %) when the cases were added. On the untouched builds the checks
+  mark **190 findings, all looked at: 190 real gaps, 0 false** (another font family than the design's,
   a colour one token off, a radius without Figma's corner smoothing, a pill 2 px short).
 
   When the cases were added, the untouched builds had 199 findings; two reviewers per case (one to label, one
@@ -237,8 +238,8 @@ problem to a general, non-private reproduction and contribute an issue or a regr
 секции расхождение, `report.html` — эталон, сборку и diff рядом, `drift.mjs` — что стало лучше или хуже с
 прошлого запуска. Внутренний корпус (168 из 168 мутаций, 1 ложное срабатывание из 27 эквивалентных
 реализаций) и внешний «невиденный» корпус считаются раздельно: на 77 экранах двух проектов, под которые
-проверка не писалась, обнаружено 710 из 736 мутаций (96 %), а на нетронутых сборках все 162 находки
-разобраны по картинкам: 162 реальных расхождения, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
+проверка не писалась, обнаружено 752 из 785 мутаций (96 %) на 80 экранах (включая Vue, Svelte и обычный HTML), а на нетронутых
+сборках все 190 находок разобраны по картинкам: 190 реальных расхождений, 0 ложных. Как скилл Claude Code ведёт весь цикл: читает фрейм, верстает, проверяет, исправляет
 и записывает итог в `PIXEL-SPEC.md` («Исправлено», «Оставлено осознанно», «Не закрыто»), ничего не
 придумывая сверх макета.
 

@@ -537,6 +537,29 @@ describe('values found without ids, in the notations builds use', () => {
     });
   });
 
+  test('line-height normal is compared by the line it draws', () => {
+    // A one-line text with Figma's AUTO line: the build's normal line is right when it draws the same height.
+    const auto = (height) => handle({ height, lineHeight: { unit: 'AUTO' }, fontSize: 15 });
+    styles([frame('9:7', 'hero', 56, 180), auto(10)]);
+    withSite({ css: '.hero__handle { line-height: normal; }' }, () => {
+      run('pixel-diff.mjs');
+      const line = offs('hero').find((l) => l.includes('line-height'));
+      const drawn = Number(/normal \(([\d.]+)\)/.exec(line)?.[1]);
+      assert.ok(drawn > 10, line);
+      styles([frame('9:7', 'hero', 56, 180), auto(drawn)]);
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((l) => l.includes('line-height')), []);
+    });
+  });
+
+  test('a declared font that is not drawn is reported even when the export has no family', () => {
+    styles([frame('9:7', 'hero', 56, 180), handle()]);
+    withSite({ css: '.hero__handle { font-family: "Nowhere Sans", monospace; }' }, () => {
+      run('pixel-diff.mjs');
+      assert.deepEqual(offs('hero').filter((l) => l.includes('font-family')), ['«@alexkim» font-family as declared → Nowhere Sans (not loaded: monospace)']);
+    });
+  });
+
   test("a bare label in a button is placed by its glyphs, not by the button's box", () => {
     // Figma's hugging label centred in the 335×48 button (not in Auto Layout, so its position is checked).
     const label = { id: '9:6', name: 'Sign out', type: 'TEXT', x: 157.5, y: 530, width: 60, height: 20, characters: 'Sign out', textAutoResize: 'WIDTH_AND_HEIGHT', fills: [{ type: 'SOLID', color: '#C9302C', opacity: 1 }] };

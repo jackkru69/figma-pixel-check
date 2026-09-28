@@ -62,8 +62,9 @@ const walk = (node, parentOpacity) => {
   if (node.type === 'TEXT') {
     Object.assign(entry, {
       characters: clean(node.characters),
-      fontFamily: mixed(node.fontName)?.family ?? null,
-      fontStyle: mixed(node.fontName)?.style ?? null,
+      // With mixed styles, the first character's font: the text is mostly set in it.
+      fontFamily: (mixed(node.fontName) ?? (node.characters.length ? node.getRangeFontName(0, 1) : null))?.family ?? null,
+      fontStyle: (mixed(node.fontName) ?? (node.characters.length ? node.getRangeFontName(0, 1) : null))?.style ?? null,
       fontWeight: mixed(node.fontWeight),
       fontSize: mixed(node.fontSize),
       lineHeight: mixed(node.lineHeight),

@@ -229,6 +229,10 @@ Pixels cannot tell a wrong font weight from Figma's, a radius of 8 from 12 or `#
    against Figma's widths: a screen median 0.4 % or more away from Figma's is reported (diagnostic only) as
    font files other than the ones Figma draws with, which moves line breaks and centred lines.
 
+   `line-height: normal` is compared by the line it draws on a one-line text, within 1.5 px (Chromium rounds
+   the font's ascent and descent apart); a declared family that is not drawn is reported even when the export
+   has no family (a text of mixed styles, exported now by its first character's font).
+
    A see-through fill is compared as it shows over the colour behind the element (10 % of a tint over white
    may be written as the opaque colour it makes). A vector's corners are in its path: its corner radius is
    not compared, and a shape under a text is never the box a build draws around it. Content the page does
@@ -562,8 +566,8 @@ check. Upload
   styles (see [Style check](#style-check)): with them the corpus benchmark detects all 168 realistic mistakes,
   against 110 without (`corpus/BENCHMARK.md`). The corpus was built together with the checks, so read that
   as "no known blind spot left", not as a detection rate on other designs. The external corpus
-  (`corpus/external/`, 77 screens of two projects the checks were not built on, all with Figma's values
-  exported) measures that: 710 of 736 generated mistakes, and no false finding among the 162 on the
+  (`corpus/external/`, 80 screens the checks were not built on, React, Astro, Vue, Svelte and plain HTML, all
+  with Figma's values exported) measures that: 752 of 785 generated mistakes, and no false finding among the 190 on the
   untouched builds. On the false-positive
   side, 26 of 27 correct implementations written differently pass (grid for flex, margins for gap, inline
   SVG with `currentColor`, variables, longhands, wrappers...). The style check does not compare

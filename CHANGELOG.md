@@ -11,6 +11,10 @@
   (it found Inter 4 where the files draw Inter 3.19), see-through fills compared over their backdrop, strokes
   of a same-box overlay, vectors neither compared by radius nor taken as text boxes, closed `<details>`
   content and `<script>` siblings ignored when measuring spacing, wrappers spanning one axis looked through.
+- From three Figma Community designs built by another model in Vue, Svelte and plain HTML: `line-height:
+  normal` measured instead of always reported, a declared font that is not loaded reported without an exported
+  family, texts of a section that is itself a picture treated as part of it, and `figma-styles.js` exports the
+  first character's font of a text with mixed styles.
 - From the missed mutations: a painted frame is found through most of its texts, not only all of them.
   Finding unpainted Auto Layout frames by their texts was tried and left out: builds place padding on other
   levels than Figma, and it marked 80 false paddings for one more detected gap.

@@ -523,7 +523,8 @@ export async function readDom(requests) {
       // A text the design draws inside a picture (a card logo, a badge) is part of the picture in the build.
       if (request.type === 'TEXT' && sectionElement && request.size) {
         const top = sectionElement.getBoundingClientRect().top;
-        const inImage = [...sectionElement.querySelectorAll('img, svg, canvas, picture, video')].some((media) => {
+        const media = [sectionElement, ...sectionElement.querySelectorAll('img, svg, canvas, picture, video')].filter((element) => element.matches('img, svg, canvas, picture, video'));
+        const inImage = media.some((media) => {
           const rect = media.getBoundingClientRect();
           const x = rect.left + window.scrollX;
           const y = rect.top - top;
@@ -827,6 +828,11 @@ function differences(node, dom) {
   }
 
   if (node.type === 'TEXT') {
+    // A declared family that is not drawn is a difference even when the export has no family (mixed styles).
+    if (!node.fontFamily && dom.drawnFamily !== undefined) {
+      const declared = s.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '');
+      if (dom.drawnFamily !== declared) add('font-family', 'as declared', `${declared} (not loaded: ${dom.drawnFamily ?? 'a fallback'})`);
+    }
     if (node.fontFamily) {
       // The family drawn, not only the one declared; fontsource names its variable fonts "<Family> Variable".
       const declared = s.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '');
@@ -846,7 +852,12 @@ function differences(node, dom) {
       const want = lh.unit === 'PIXELS' ? lh.value : lh.unit === 'PERCENT' ? (node.fontSize * lh.value) / 100 : single ? node.height : null;
       const label = lh.unit === 'AUTO' ? `AUTO (${round(want)})` : round(want);
       const drawn = dom.lineHeight ?? s.lineHeight;
-      if (want != null && drawn === 'normal') add('line-height', label, 'normal');
+      // normal is the font's own line: what it draws, measured on a one-line text, is what counts.
+      const normal = drawn === 'normal' && single && dom.textBox ? dom.textBox.bottom - dom.textBox.top : null;
+      if (want != null && drawn === 'normal') {
+        // Chromium rounds the font's ascent and descent apart: its normal line can be up to 1.5 px taller.
+        if (normal == null || !near(normal, want, 1.5)) add('line-height', label, normal == null ? 'normal' : `normal (${round(normal)})`);
+      }
       else if (want != null && !near(parseFloat(drawn), want, PX)) add('line-height', label, round(parseFloat(drawn)));
     }
     const ls = node.letterSpacing;
